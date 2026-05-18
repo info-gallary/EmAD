@@ -1,0 +1,35 @@
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[oc]
+*.pyo
+build/
+dist/
+wheels/
+*.egg-info
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+env/
+venv/
+ENV/
+
+# ── Raw ESA telemetry data (30 GB — obtain separately) ───────────────────────
+ESA-data/
+
+# ── Archives ─────────────────────────────────────────────────────────────────
+*.zip
+
+# ── Old intermediate artifacts (superseded by reports/) ──────────────────────
+esa_anomaly_detection/data/
+esa_anomaly_detection/models/
+
+# ── OS / editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.log
+*.tmp

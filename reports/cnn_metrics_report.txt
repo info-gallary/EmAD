@@ -1,0 +1,25 @@
+
+================================================================
+  ESA ANOMALY DETECTION - CNN CLASSIFIER METRICS
+  1D-CNN with Residual Blocks | Stratified 70/15/15 split
+================================================================
+
+  Accuracy            : 99.88%
+  Weighted F1-Score   : 0.9988
+  Macro F1-Score      : 0.9942
+  Weighted Precision  : 0.9988
+  Weighted Recall     : 0.9988
+
+----------------------------------------------------------------
+  Per-Class Report:
+
+              precision    recall  f1-score   support
+
+      Normal     0.9672    1.0000    0.9833        59
+     Thermal     1.0000    1.0000    1.0000        32
+  Rare-Event     1.0000    0.9987    0.9993      1526
+
+    accuracy                         0.9988      1617
+   macro avg     0.9891    0.9996    0.9942      1617
+weighted avg     0.9988    0.9988    0.9988      1617
+

@@ -1,0 +1,24 @@
+
+================================================================
+   ESA ANOMALY DETECTION - METRICS REPORT
+   Model: 1D-CNN with Residual Blocks
+   Data : ESA Mission 1, Dec 01-15 2004
+================================================================
+
+   Accuracy (overall)    : 100.00%
+   Weighted F1-Score     : 1.0000
+   Macro F1-Score        : 1.0000
+   Weighted Precision    : 1.0000
+   Weighted Recall       : 1.0000
+
+----------------------------------------------------------------
+   Per-Class Report:
+
+              precision    recall  f1-score   support
+
+  Rare-Event     1.0000    1.0000    1.0000      1596
+
+    accuracy                         1.0000      1596
+   macro avg     1.0000    1.0000    1.0000      1596
+weighted avg     1.0000    1.0000    1.0000      1596
+

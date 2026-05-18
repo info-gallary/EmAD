@@ -1,0 +1,25 @@
+
+================================================================
+  ESA ANOMALY DETECTION - VAE LATENT SPACE METRICS
+  VAE trained on Normal windows only | Binary detection
+================================================================
+
+  Threshold (mu+2*sigma) : 0.027199
+  Accuracy (binary)      : 92.95%
+  F1 (anomaly class)     : 0.9621
+  Precision (anomaly)    : 0.9993
+  Recall    (anomaly)    : 0.9275
+  ROC-AUC                : 0.9669
+
+----------------------------------------------------------------
+  Binary Classification Report:
+
+              precision    recall  f1-score   support
+
+      Normal     0.3392    0.9831    0.5043        59
+     Anomaly     0.9993    0.9275    0.9621      1558
+
+    accuracy                         0.9295      1617
+   macro avg     0.6692    0.9553    0.7332      1617
+weighted avg     0.9752    0.9295    0.9454      1617
+
