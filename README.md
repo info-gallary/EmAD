@@ -222,4 +222,4 @@ The preprocessed dataset (`preprocessed_dataset.csv`) is tracked via **Git LFS**
 
 ## License
 
-This project is for research and educational purposes. ESA telemetry data is subject to ESA's data usage terms.
+This project is for research and educational purposes only. ESA telemetry data is subject to ESA's data usage terms.
