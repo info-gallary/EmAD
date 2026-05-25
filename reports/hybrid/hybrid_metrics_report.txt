@@ -1,0 +1,39 @@
+
+====================================================================
+  ESA ANOMALY DETECTION - HYBRID CNN-VAE META-LEARNER REPORT
+  Architecture: CNN Backbone (256-d) + VAE Latent (64-d) -> MLP
+  Training: Phase-1 warmup (20ep) + Phase-2 joint (30ep)
+====================================================================
+
+  Accuracy (overall)    : 99.81%
+  Weighted F1-Score     : 0.9982
+  Macro F1-Score        : 0.9862
+  Weighted Precision    : 0.9982
+  Weighted Recall       : 0.9981
+
+--------------------------------------------------------------------
+  Per-Class AUC (one-vs-rest):
+    Normal               : 1.0000
+    Thermal              : 1.0000
+    Rare-Event           : 1.0000
+
+--------------------------------------------------------------------
+  Per-Class Classification Report:
+
+              precision    recall  f1-score   support
+
+      Normal     0.9667    0.9831    0.9748        59
+     Thermal     0.9697    1.0000    0.9846        32
+  Rare-Event     1.0000    0.9987    0.9993      1526
+
+    accuracy                         0.9981      1617
+   macro avg     0.9788    0.9939    0.9862      1617
+weighted avg     0.9982    0.9981    0.9982      1617
+
+--------------------------------------------------------------------
+  Cross-Model Comparison (same stratified test split):
+
+  CNN         Acc  99.88%  F1 0.9988  Prec 0.9988  Rec 0.9988
+  VAE (binary)  Acc  93.14%  F1 0.9631  Prec 0.9993  Rec 0.9294
+  Hybrid      Acc  99.81%  F1 0.9982  Prec 0.9982  Rec 0.9981
+
