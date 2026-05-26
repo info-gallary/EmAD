@@ -1,0 +1,34 @@
+
+==============================================================
+  MISSION 3 - MODEL COMPARISON REPORT
+  Features: 35   Classes: [0, 2]   Test windows: 1,509
+==============================================================
+
+  Model         Acc      W-F1     Prec     Rec
+  --------------------------------------------------
+  CNN           100.00%    1.0000   1.0000   1.0000
+  VAE           70.51%    0.0748   0.2687   0.0435
+  Hybrid        100.00%    1.0000   1.0000   1.0000
+
+  CNN Classification Report:
+
+               precision    recall  f1-score   support
+
+       Normal     1.0000    1.0000    1.0000      1095
+Power Anomaly     1.0000    1.0000    1.0000       414
+
+     accuracy                         1.0000      1509
+    macro avg     1.0000    1.0000    1.0000      1509
+ weighted avg     1.0000    1.0000    1.0000      1509
+
+
+  Hybrid Classification Report:
+
+               precision    recall  f1-score   support
+
+       Normal     1.0000    1.0000    1.0000      1095
+Power Anomaly     1.0000    1.0000    1.0000       414
+
+     accuracy                         1.0000      1509
+    macro avg     1.0000    1.0000    1.0000      1509
+ weighted avg     1.0000    1.0000    1.0000      1509

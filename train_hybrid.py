@@ -381,7 +381,7 @@ def plot_confusion_matrix(y_true, y_pred, names, out):
 def plot_tsne(mus, y_true, names, palette, out):
     print("  Running t-SNE on latent vectors ...")
     z2 = TSNE(n_components=2, perplexity=40, random_state=42,
-              max_iter=1000, init="pca").fit_transform(mus)
+              n_iter=1000, init="pca").fit_transform(mus)
 
     present = sorted(set(y_true))
     fig, ax  = plt.subplots(figsize=(9, 7))

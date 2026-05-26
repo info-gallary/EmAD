@@ -1,0 +1,41 @@
+
+====================================================================
+  GENERALIZED HYBRID CNN-VAE - CROSS-MISSION REPORT
+  Trained on all 3 ESA missions (zero-padded to 275 features)
+  Architecture: CNN Residual + VAE latent -> MLP meta-learner
+====================================================================
+
+  Overall Test Accuracy     : 97.69%
+  Weighted F1-Score         : 0.9837
+  Macro F1-Score            : 0.8395
+  Weighted Precision        : 0.9941
+  Weighted Recall           : 0.9769
+
+--------------------------------------------------------------------
+  Per-Mission Breakdown (test windows):
+
+  Mission 1: Acc 99.60%  F1 0.9961
+  Mission 2: Acc 93.97%  F1 0.9679
+  Mission 3: Acc 99.74%  F1 0.9987
+
+--------------------------------------------------------------------
+  Leave-One-Mission-Out Generalization:
+
+  Mission 1: Acc 82.31%  F1 0.8551
+  Mission 2: Acc 11.68%  F1 0.0368
+  Mission 3: Acc 0.00%  F1 0.0000
+
+--------------------------------------------------------------------
+  Classification Report:
+
+                 precision    recall  f1-score   support
+
+         Normal     1.0000    0.9599    0.9795      2541
+  Power Anomaly     1.0000    1.0000    1.0000       414
+Thermal Anomaly     0.2353    1.0000    0.3810        32
+     Rare-Event     0.9982    0.9970    0.9976      1654
+
+       accuracy                         0.9769      4641
+      macro avg     0.8084    0.9892    0.8395      4641
+   weighted avg     0.9941    0.9769    0.9837      4641
+
