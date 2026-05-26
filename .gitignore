@@ -34,3 +34,5 @@ Thumbs.db
 *.log
 *.tmp
 EmAD_project.zip
+data/
+models/
