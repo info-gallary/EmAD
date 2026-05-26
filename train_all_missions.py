@@ -348,8 +348,12 @@ def run_mission(mid):
     print(f"  Samples:{len(X):,}  Features:{n_feat}  Classes:{uniq_cls}  (remapped 0..{n_cls-1})")
 
     Xw, yw = make_windows(X, y, WINDOW, STEP)
-    Xtr, Xte, ytr, yte = train_test_split(Xw, yw, test_size=0.15, random_state=42, stratify=yw)
-    Xtr, Xva, ytr, yva = train_test_split(Xtr, ytr, test_size=0.1765, random_state=42, stratify=ytr)
+    # chronological split — no temporal leakage
+    n = len(Xw)
+    n_tr, n_va = int(0.70 * n), int(0.85 * n)
+    Xtr, ytr = Xw[:n_tr],      yw[:n_tr]
+    Xva, yva = Xw[n_tr:n_va],  yw[n_tr:n_va]
+    Xte, yte = Xw[n_va:],      yw[n_va:]
     print(f"  Windows  train:{len(Xtr):,}  val:{len(Xva):,}  test:{len(Xte):,}")
 
     cw   = class_weights(ytr, n_cls, DEVICE)

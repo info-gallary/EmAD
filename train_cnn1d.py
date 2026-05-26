@@ -239,8 +239,10 @@ def main():
     dist={int(c):int(n) for c,n in zip(*np.unique(yw,return_counts=True))}
     print(f"  Windows:{Xw.shape}  Dist:{dist}")
 
-    Xtr,Xte,ytr,yte=train_test_split(Xw,yw,test_size=0.15,random_state=42,stratify=yw)
-    Xtr,Xva,ytr,yva=train_test_split(Xtr,ytr,test_size=0.1765,random_state=42,stratify=ytr)
+    n=len(Xw); n_tr,n_va=int(0.70*n),int(0.85*n)
+    Xtr,ytr=Xw[:n_tr],yw[:n_tr]
+    Xva,yva=Xw[n_tr:n_va],yw[n_tr:n_va]
+    Xte,yte=Xw[n_va:],yw[n_va:]
     print(f"  Train:{len(Xtr):,}  Val:{len(Xva):,}  Test:{len(Xte):,}")
 
     ci,cn=np.unique(ytr,return_counts=True)

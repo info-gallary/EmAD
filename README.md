@@ -4,34 +4,40 @@ Deep learning system for multiclass anomaly detection across **3 ESA satellite t
 
 ## Performance Summary
 
-### Mission 1 (Dec 2004 — 55 channels, 275 features)
-
-| Model | Test Accuracy | Weighted F1 |
-|---|---|---|
-| 1D-CNN | 99.88 % | 0.9988 |
-| VAE (binary) | 92.95 % | 0.9621 (AUC 0.9669) |
-| **Hybrid Meta-Learner** | **99.81 %** | **0.9982** |
+> All results use **chronological train/val/test splits** (70/15/15 % in time order) to prevent temporal leakage from sliding-window overlap.
 
 ### Multi-Mission Results (per-mission training)
 
 | Mission | Features | Classes | CNN Acc | Hybrid Acc | Hybrid W-F1 |
 | --- | --- | --- | --- | --- | --- |
-| Mission 1 | 275 | Normal, Thermal, Rare-Event | 99.87 % | 99.80 % | 0.9980 |
-| Mission 2 | 215 | Normal, Rare-Event | 99.63 % | 99.63 % | 0.9963 |
+| Mission 1 | 275 | Normal, Thermal, Rare-Event | 100.00 % | 100.00 % | 1.0000 |
+| Mission 2 | 215 | Normal, Rare-Event | 46.44 % | 46.44 % | 0.2946 |
 | Mission 3 | 35 | Normal, Power | 100.00 % | 100.00 % | 1.0000 |
+
+Mission 2's low accuracy reflects a genuine **temporal distribution shift** — the class balance inverts in the final 15 % of the time series (predominantly Normal) versus the training portion (predominantly Rare-Event). This would be invisible under random stratified splits.
 
 ### Generalized Model (trained on all 3 missions)
 
 | Metric | Value |
 | --- | --- |
-| Overall Test Accuracy | 97.69 % |
-| Weighted F1 | 0.9837 |
-| Macro F1 | 0.8395 |
-| Mission 1 (test subset) | 99.60 % |
-| Mission 2 (test subset) | 93.97 % |
-| Mission 3 (test subset) | 99.74 % |
+| Overall Test Accuracy | 78.67 % |
+| Weighted F1 | 0.8117 |
+| Macro F1 | 0.5418 |
+| Mission 1 (test subset) | 93.85 % |
+| Mission 2 (test subset) | 44.63 % |
+| Mission 3 (test subset) | 100.00 % |
 
-> Full LOMO generalization results in `reports/generalized/generalized_report.txt`.
+### Leave-One-Mission-Out (LOMO) Generalization
+
+| Held-out Mission | Accuracy | Weighted F1 |
+| --- | --- | --- |
+| Mission 1 | 57.03 % | 0.6850 |
+| Mission 2 | 14.31 % | 0.0363 |
+| Mission 3 | 0.01 % | 0.0002 |
+
+LOMO collapse on M3 and M2 confirms the model learns mission-specific telemetry signatures rather than universal anomaly patterns — a key research finding motivating future domain-adaptation work.
+
+> Full per-class reports in `reports/missions/` and `reports/generalized/generalized_report.txt`.
 
 ---
 

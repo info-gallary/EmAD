@@ -350,11 +350,18 @@ def main():
     Xw, yw, mw = make_windows_indexed(X_full, y_full, mid_arr, WINDOW, STEP)
     print(f"  Total windows: {len(Xw):,}")
 
-    # stratified split
-    Xtr, Xte, ytr, yte, mtr, mte = train_test_split(
-        Xw, yw, mw, test_size=0.15, random_state=42, stratify=yw)
-    Xtr, Xva, ytr, yva = train_test_split(
-        Xtr, ytr, test_size=0.1765, random_state=42, stratify=ytr)
+    # chronological split per mission (prevents temporal leakage)
+    train_idx, val_idx, test_idx = [], [], []
+    for m in sorted(set(mw.tolist())):
+        m_idx = np.where(mw == m)[0]
+        n = len(m_idx)
+        n_tr = int(0.70 * n); n_va = int(0.85 * n)
+        train_idx.extend(m_idx[:n_tr].tolist())
+        val_idx.extend(m_idx[n_tr:n_va].tolist())
+        test_idx.extend(m_idx[n_va:].tolist())
+    Xtr, ytr, mtr = Xw[train_idx], yw[train_idx], mw[train_idx]
+    Xva, yva      = Xw[val_idx],   yw[val_idx]
+    Xte, yte, mte = Xw[test_idx],  yw[test_idx], mw[test_idx]
     print(f"  Train:{len(Xtr):,}  Val:{len(Xva):,}  Test:{len(Xte):,}")
 
     # class weights
@@ -476,11 +483,10 @@ def main():
             print(f"    [SKIP] too few samples")
             continue
 
-        # resplit train into train/val
-        try:
-            Xl2, Xv2, yl2, yv2 = train_test_split(X_ltr, y_ltr, test_size=0.15, random_state=42, stratify=y_ltr)
-        except ValueError:
-            Xl2, Xv2, yl2, yv2 = train_test_split(X_ltr, y_ltr, test_size=0.15, random_state=42)
+        # chronological train/val split for LOMO
+        n_l = len(X_ltr)
+        Xl2, yl2 = X_ltr[:int(0.85 * n_l)], y_ltr[:int(0.85 * n_l)]
+        Xv2, yv2 = X_ltr[int(0.85 * n_l):], y_ltr[int(0.85 * n_l):]
 
         cw_l = class_weights(yl2, n_cls, DEVICE)
         lt_dl = DataLoader(TelDS(Xl2, yl2), BATCH, shuffle=True,  num_workers=0)
@@ -532,8 +538,9 @@ def main():
         save_lomo_plot(lomo_results, os.path.join(REPORT_DIR, "generalized_lomo.png"))
 
     # -- text report ----------------------------------------------------------
-    present = sorted(set(true))
+    present = sorted(set(true) | set(pred))
     clf_rpt = classification_report(true, pred,
+                                     labels=present,
                                      target_names=[names[i] for i in present],
                                      digits=4, zero_division=0)
 

@@ -6,29 +6,29 @@
 
   Model         Acc      W-F1     Prec     Rec
   --------------------------------------------------
-  CNN           99.63%    0.9963   0.9964   0.9963
-  VAE           91.65%    0.6925   0.7379   0.6524
-  Hybrid        99.63%    0.9963   0.9963   0.9963
+  CNN           46.44%    0.2978   0.4834   0.4644
+  VAE           46.44%    0.6343   0.4644   1.0000
+  Hybrid        46.44%    0.2946   0.2157   0.4644
 
   CNN Classification Report:
 
               precision    recall  f1-score   support
 
-      Normal     1.0000    0.9957    0.9978      1384
-  Rare-Event     0.9749    1.0000    0.9873       233
+      Normal     0.5000    0.0035    0.0069       866
+  Rare-Event     0.4643    0.9960    0.6334       751
 
-    accuracy                         0.9963      1617
-   macro avg     0.9874    0.9978    0.9926      1617
-weighted avg     0.9964    0.9963    0.9963      1617
+    accuracy                         0.4644      1617
+   macro avg     0.4822    0.4997    0.3201      1617
+weighted avg     0.4834    0.4644    0.2978      1617
 
 
   Hybrid Classification Report:
 
               precision    recall  f1-score   support
 
-      Normal     0.9993    0.9964    0.9978      1384
-  Rare-Event     0.9789    0.9957    0.9872       233
+      Normal     0.0000    0.0000    0.0000       866
+  Rare-Event     0.4644    1.0000    0.6343       751
 
-    accuracy                         0.9963      1617
-   macro avg     0.9891    0.9960    0.9925      1617
-weighted avg     0.9963    0.9963    0.9963      1617
+    accuracy                         0.4644      1617
+   macro avg     0.2322    0.5000    0.3171      1617
+weighted avg     0.2157    0.4644    0.2946      1617
