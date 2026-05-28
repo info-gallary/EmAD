@@ -6,68 +6,68 @@
 
   Model         Acc      W-F1     Prec     Rec
   --------------------------------------------------
-  CNN           35.83%    0.3872   0.8823   0.3583
-  BiLSTM        35.64%    0.3848   0.8822   0.3564
-  Transformer   35.64%    0.3848   0.8822   0.3564
-  ConvFormer    34.90%    0.3748   0.8820   0.3490
-  VAE           14.29%    0.2501   0.1431   0.9914
-  Hybrid        35.71%    0.3856   0.8822   0.3571
+  CNN           35.89%    0.3880   0.8823   0.3589
+  BiLSTM        45.30%    0.5036   0.8859   0.4530
+  Transformer   76.79%    0.8012   0.9057   0.7679
+  ConvFormer    35.58%    0.3839   0.8822   0.3558
+  VAE           14.42%    0.2520   0.1442   1.0000
+  Hybrid        34.53%    0.3698   0.8818   0.3453
 
   CNN Classification Report:
 
               precision    recall  f1-score   support
 
-      Normal     1.0000    0.2502    0.4002      1383
-  Rare-Event     0.1835    1.0000    0.3100       233
+      Normal     1.0000    0.2509    0.4012      1383
+  Rare-Event     0.1836    1.0000    0.3103       233
 
-    accuracy                         0.3583      1616
-   macro avg     0.5917    0.6251    0.3551      1616
-weighted avg     0.8823    0.3583    0.3872      1616
+    accuracy                         0.3589      1616
+   macro avg     0.5918    0.6255    0.3557      1616
+weighted avg     0.8823    0.3589    0.3880      1616
 
 
   BiLSTM Classification Report:
 
               precision    recall  f1-score   support
 
-      Normal     1.0000    0.2480    0.3975      1383
-  Rare-Event     0.1830    1.0000    0.3094       233
+      Normal     1.0000    0.3608    0.5303      1383
+  Rare-Event     0.2086    1.0000    0.3452       233
 
-    accuracy                         0.3564      1616
-   macro avg     0.5915    0.6240    0.3534      1616
-weighted avg     0.8822    0.3564    0.3848      1616
+    accuracy                         0.4530      1616
+   macro avg     0.6043    0.6804    0.4377      1616
+weighted avg     0.8859    0.4530    0.5036      1616
 
 
   Transformer Classification Report:
 
               precision    recall  f1-score   support
 
-      Normal     1.0000    0.2480    0.3975      1383
-  Rare-Event     0.1830    1.0000    0.3094       233
+      Normal     0.9941    0.7332    0.8439      1383
+  Rare-Event     0.3809    0.9742    0.5476       233
 
-    accuracy                         0.3564      1616
-   macro avg     0.5915    0.6240    0.3534      1616
-weighted avg     0.8822    0.3564    0.3848      1616
+    accuracy                         0.7679      1616
+   macro avg     0.6875    0.8537    0.6958      1616
+weighted avg     0.9057    0.7679    0.8012      1616
 
 
   ConvFormer Classification Report:
 
               precision    recall  f1-score   support
 
-      Normal     1.0000    0.2393    0.3862      1383
-  Rare-Event     0.1813    1.0000    0.3070       233
+      Normal     1.0000    0.2473    0.3965      1383
+  Rare-Event     0.1829    1.0000    0.3092       233
 
-    accuracy                         0.3490      1616
-   macro avg     0.5907    0.6197    0.3466      1616
-weighted avg     0.8820    0.3490    0.3748      1616
+    accuracy                         0.3558      1616
+   macro avg     0.5914    0.6236    0.3529      1616
+weighted avg     0.8822    0.3558    0.3839      1616
 
 
   Hybrid Classification Report:
 
               precision    recall  f1-score   support
 
-      Normal     1.0000    0.2487    0.3984      1383
-  Rare-Event     0.1832    1.0000    0.3096       233
+      Normal     1.0000    0.2350    0.3806      1383
+  Rare-Event     0.1805    1.0000    0.3058       233
 
-    accuracy                         0.3571      1616
-   macro avg     0.5916    0.6244    0.3540      1616
-weighted avg     0.8822    0.3571    0.3856      1616
+    accuracy                         0.3453      1616
+   macro avg     0.5902    0.6175    0.3432      1616
+weighted avg     0.8818    0.3453    0.3698      1616
