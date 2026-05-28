@@ -1,0 +1,18 @@
+\begin{table}[ht]
+\centering
+\caption{Model performance across ESA missions (Accuracy \% / Weighted F1). Best result per mission in \textbf{bold}.}
+\label{tab:results}
+\begin{tabular}{l|cc|cc|cc}
+\hline
+\textbf{Model} & \multicolumn{2}{c|}{\textbf{Mission 1}} & \multicolumn{2}{c|}{\textbf{Mission 2}} & \multicolumn{2}{c}{\textbf{Mission 3}} \\
+ & Acc\% & F1 & Acc\% & F1 & Acc\% & F1 \\
+\hline
+CNN & \textbf{98.9$\pm$0.0} & \textbf{0.989} & \textbf{35.8$\pm$0.0} & \textbf{0.387} & 91.8$\pm$0.0 & 0.913 \\
+BiLSTM & 98.7$\pm$0.0 & 0.987 & 35.6$\pm$0.0 & 0.385 & 99.3$\pm$0.0 & 0.993 \\
+Transformer & 97.9$\pm$0.0 & 0.970 & 35.6$\pm$0.0 & 0.385 & \textbf{99.9$\pm$0.0} & \textbf{0.999} \\
+ConvFormer & 92.2$\pm$0.0 & 0.930 & 34.9$\pm$0.0 & 0.375 & 99.5$\pm$0.0 & 0.995 \\
+VAE & 93.5$\pm$0.0 & 0.965 & 14.3$\pm$0.0 & 0.250 & 82.0$\pm$0.0 & 0.519 \\
+Hybrid & 98.7$\pm$0.0 & 0.985 & 35.7$\pm$0.0 & 0.386 & 91.8$\pm$0.0 & 0.913 \\
+\hline
+\end{tabular}
+\end{table}

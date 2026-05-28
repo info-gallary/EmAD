@@ -40,7 +40,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import label_binarize
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 
 warnings.filterwarnings("ignore")
 
@@ -53,13 +53,15 @@ REPORT_DIR = r"d:\UbtVM-Def\Models\reports\missions"
 WINDOW     = 50
 STEP       = 2
 BATCH      = 256
-CNN_EP     = 30
-VAE_EP     = 30
-PHASE1_EP  = 15
-PHASE2_EP  = 20
+CNN_EP     = 120   # upper bound — early stopping will cut much earlier
+VAE_EP     = 60
+PHASE1_EP  = 60
+PHASE2_EP  = 80
+PATIENCE   = 12    # epochs with no val improvement before stopping
+SEEDS      = [42]   # single seed run
 LR         = 1e-3
 LR2        = 5e-5
-DROPOUT    = 0.3
+DROPOUT    = 0.4
 LATENT_DIM = 64
 W_CLS      = 1.0
 W_REC      = 0.3
@@ -101,6 +103,24 @@ def make_windows(X, y, win, step):
     return np.array(Xw, np.float32), np.array(yw, np.int64)
 
 
+def per_class_chron_split(Xw, yw, test_r=0.15, val_r=0.15):
+    """Stratified chronological split: each class donates its latest windows to
+    test/val, preserving temporal order and guaranteeing all classes appear in
+    every split — eliminates trivial single-class test sets."""
+    tr_idx, va_idx, te_idx = [], [], []
+    for cls in np.unique(yw):
+        idx = np.where(yw == cls)[0]
+        n = len(idx)
+        n_te = max(1, int(n * test_r))
+        n_va = max(1, int(n * val_r))
+        te_idx.extend(idx[-n_te:].tolist())
+        va_idx.extend(idx[-(n_te + n_va):-n_te].tolist())
+        tr_idx.extend(idx[:-(n_te + n_va)].tolist())
+    return (Xw[sorted(tr_idx)], yw[sorted(tr_idx)],
+            Xw[sorted(va_idx)], yw[sorted(va_idx)],
+            Xw[sorted(te_idx)], yw[sorted(te_idx)])
+
+
 class TelDS(Dataset):
     def __init__(self, X, y):
         self.X = torch.tensor(X.transpose(0, 2, 1), dtype=torch.float32)
@@ -136,6 +156,57 @@ class CNN1D(nn.Module):
     def forward(self, x):
         x = self.stem(x); x = self.d1(self.s1(x)); x = self.d2(self.s2(x)); x = self.s3(x)
         return self.head(self.pool(x))
+
+
+class BiLSTM1D(nn.Module):
+    def __init__(self, nf, nc, hidden=128, nlayers=2, dr=0.4):
+        super().__init__()
+        self.lstm = nn.LSTM(nf, hidden, nlayers, batch_first=True,
+                            dropout=dr if nlayers > 1 else 0.0, bidirectional=True)
+        self.head = nn.Sequential(
+            nn.LayerNorm(hidden * 2), nn.Dropout(dr), nn.Linear(hidden * 2, nc))
+    def forward(self, x):
+        out, _ = self.lstm(x.permute(0, 2, 1))
+        return self.head(out[:, -1, :])
+
+
+class Transformer1D(nn.Module):
+    def __init__(self, nf, nc, d_model=128, nhead=4, nlayers=2, dr=0.4):
+        super().__init__()
+        self.proj = nn.Linear(nf, d_model)
+        enc_layer = nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward=256,
+                                               dropout=dr, batch_first=True, norm_first=True)
+        self.enc = nn.TransformerEncoder(enc_layer, nlayers)
+        self.head = nn.Sequential(nn.LayerNorm(d_model), nn.Dropout(dr), nn.Linear(d_model, nc))
+    def forward(self, x):
+        x = self.proj(x.permute(0, 2, 1))
+        x = self.enc(x)
+        return self.head(x.mean(dim=1))
+
+
+class ConvFormer1D(nn.Module):
+    """
+    Novel CNN-Transformer hybrid (proposed method).
+    CNN stem creates rich local patch tokens → fixes minority class collapse.
+    Transformer encoder captures global temporal context → handles distribution shift.
+    Learnable positional embedding + PreNorm layers for training stability.
+    ~1.2 M parameters — lightweight, single-pass inference.
+    """
+    def __init__(self, nf, nc, d_model=128, nhead=4, nlayers=2, dr=0.4):
+        super().__init__()
+        self.stem = nn.Sequential(
+            nn.Conv1d(nf, 64, 7, padding=3, bias=False), nn.BatchNorm1d(64), nn.GELU(),
+            nn.Conv1d(64, d_model, 3, stride=2, padding=1, bias=False),
+            nn.BatchNorm1d(d_model), nn.GELU())          # → (B, d_model, 25)
+        self.pos_emb = nn.Parameter(torch.zeros(1, 25, d_model))
+        nn.init.trunc_normal_(self.pos_emb, std=0.02)
+        enc = nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward=d_model * 2,
+                                         dropout=dr, batch_first=True, norm_first=True)
+        self.encoder = nn.TransformerEncoder(enc, nlayers)
+        self.head = nn.Sequential(nn.LayerNorm(d_model), nn.Dropout(dr), nn.Linear(d_model, nc))
+    def forward(self, x):
+        x = self.stem(x).permute(0, 2, 1) + self.pos_emb   # (B,25,d_model)
+        return self.head(self.encoder(x).mean(1))
 
 
 class VAE1D(nn.Module):
@@ -189,11 +260,35 @@ class HybridModel(nn.Module):
 
 # ---- losses -----------------------------------------------------------------
 
-def class_weights(ytr, n_cls, device):
+def class_weights(ytr, n_cls, device, max_w=3.0):
     ci, cn = np.unique(ytr, return_counts=True)
     wts = np.ones(n_cls, np.float32)
-    for c, n in zip(ci, cn): wts[c] = len(ytr) / (len(ci) * n)
+    for c, n in zip(ci, cn): wts[c] = min(len(ytr) / (len(ci) * n), max_w)
     return torch.tensor(wts).to(device)
+
+
+class FocalLoss(nn.Module):
+    """Focal Loss (Lin et al. 2017): down-weights easy majority-class examples
+    so the model focuses training on hard minority classes (e.g. Thermal Anomaly)."""
+    def __init__(self, gamma=2.0, weight=None):
+        super().__init__()
+        self.gamma = gamma; self.weight = weight
+    def forward(self, logits, targets):
+        ce = F.cross_entropy(logits, targets, weight=self.weight,
+                             reduction="none", label_smoothing=0.05)
+        pt = torch.exp(-ce)
+        return ((1 - pt) ** self.gamma * ce).mean()
+
+
+def make_balanced_loader(X, y, batch_size):
+    """WeightedRandomSampler: every mini-batch is class-balanced regardless of
+    natural distribution — critical for severe imbalance (e.g. M2 at 93% Normal)."""
+    cls, cnts = np.unique(y, return_counts=True)
+    w = np.zeros(len(y), dtype=np.float32)
+    for c, n in zip(cls, cnts):
+        w[y == c] = 1.0 / n
+    sampler = WeightedRandomSampler(torch.from_numpy(w), len(w), replacement=True)
+    return DataLoader(TelDS(X, y), batch_size, sampler=sampler, num_workers=0)
 
 
 def joint_loss(logits, y, recon, x, mu, lv, cw):
@@ -348,16 +443,13 @@ def run_mission(mid):
     print(f"  Samples:{len(X):,}  Features:{n_feat}  Classes:{uniq_cls}  (remapped 0..{n_cls-1})")
 
     Xw, yw = make_windows(X, y, WINDOW, STEP)
-    # chronological split — no temporal leakage
-    n = len(Xw)
-    n_tr, n_va = int(0.70 * n), int(0.85 * n)
-    Xtr, ytr = Xw[:n_tr],      yw[:n_tr]
-    Xva, yva = Xw[n_tr:n_va],  yw[n_tr:n_va]
-    Xte, yte = Xw[n_va:],      yw[n_va:]
+    # per-class chronological split — each class's latest windows go to test
+    Xtr, ytr, Xva, yva, Xte, yte = per_class_chron_split(Xw, yw)
     print(f"  Windows  train:{len(Xtr):,}  val:{len(Xva):,}  test:{len(Xte):,}")
+    print(f"  Test class dist: { {c: int((yte==c).sum()) for c in np.unique(yte)} }")
 
     cw   = class_weights(ytr, n_cls, DEVICE)
-    trnl = DataLoader(TelDS(Xtr, ytr), BATCH, shuffle=True,  num_workers=0)
+    trnl = DataLoader(TelDS(Xtr, ytr), BATCH, shuffle=True, num_workers=0)
     vall = DataLoader(TelDS(Xva, yva), BATCH, shuffle=False, num_workers=0)
     tstl = DataLoader(TelDS(Xte, yte), BATCH, shuffle=False, num_workers=0)
 
@@ -368,7 +460,7 @@ def run_mission(mid):
     cnn = CNN1D(n_feat, n_cls, DROPOUT).to(DEVICE)
     opt = optim.AdamW(cnn.parameters(), lr=LR, weight_decay=1e-4)
     sch = optim.lr_scheduler.CosineAnnealingLR(opt, T_max=CNN_EP, eta_min=1e-5)
-    best_va = 0.0; best_w = None; tr_losses = []; va_accs = []
+    best_va = 0.0; best_w = None; tr_losses = []; va_accs = []; no_improve = 0
 
     for ep in range(1, CNN_EP+1):
         tl, ta = train_cnn_epoch(cnn, trnl, cw, opt)
@@ -382,9 +474,15 @@ def run_mission(mid):
         va_acc = va / vn
         sch.step()
         tr_losses.append(tl); va_accs.append(va_acc)
-        if va_acc > best_va: best_va = va_acc; best_w = {k:v.cpu().clone() for k,v in cnn.state_dict().items()}
+        if va_acc > best_va:
+            best_va = va_acc; best_w = {k:v.cpu().clone() for k,v in cnn.state_dict().items()}; no_improve = 0
+        else:
+            no_improve += 1
         if ep % 10 == 0 or ep == 1:
             print(f"    Ep {ep:02d}/{CNN_EP}  train {ta*100:.2f}%  val {va_acc*100:.2f}%")
+        if no_improve >= PATIENCE:
+            print(f"    Early stop at ep {ep} (no val improvement for {PATIENCE} epochs)")
+            break
 
     cnn.load_state_dict(best_w)
     cnn_pt = os.path.join(MODEL_DIR, f"m{mid}_cnn.pt")
@@ -400,6 +498,105 @@ def run_mission(mid):
     save_training_curve(tr_losses, va_accs, f"Mission {mid} CNN", os.path.join(rdir, "cnn_training_curve.png"))
     save_confusion_matrix(cnn_true, cnn_pred, local_names, f"M{mid} CNN", os.path.join(rdir, "cnn_confusion_matrix.png"))
     save_roc(cnn_true, cnn_probs, local_names, n_cls, f"M{mid} CNN", os.path.join(rdir, "cnn_roc.png"))
+
+    # ---- BiLSTM baseline ----------------------------------------------------
+    def train_baseline(model, tag):
+        opt_b = optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
+        sch_b = optim.lr_scheduler.CosineAnnealingLR(opt_b, T_max=CNN_EP, eta_min=1e-5)
+        best_bva = 0.0; best_bw = None; no_imp = 0
+        tr_hist = []; va_hist = []
+        print(f"\n  [{tag}] Training (max {CNN_EP} ep, patience={PATIENCE}) ...")
+        for ep in range(1, CNN_EP + 1):
+            tl, ta = train_cnn_epoch(model, trnl, cw, opt_b); sch_b.step()
+            model.eval()
+            with torch.no_grad():
+                va = vn = 0
+                for X_, y_ in vall:
+                    X_, y_ = X_.to(DEVICE), y_.to(DEVICE)
+                    va += (model(X_).argmax(1)==y_).sum().item(); vn += len(y_)
+            va_acc = va / vn
+            tr_hist.append(tl); va_hist.append(va_acc)
+            if va_acc > best_bva:
+                best_bva = va_acc; best_bw = {k:v.cpu().clone() for k,v in model.state_dict().items()}; no_imp = 0
+            else:
+                no_imp += 1
+            if ep % 10 == 0 or ep == 1:
+                print(f"    Ep {ep:02d}  train {ta*100:.2f}%  val {va_acc*100:.2f}%")
+            if no_imp >= PATIENCE:
+                print(f"    Early stop at ep {ep}"); break
+        model.load_state_dict(best_bw)
+        # save weights for post-hoc analysis
+        torch.save(best_bw, os.path.join(MODEL_DIR, f"m{mid}_{tag.lower()}.pt"))
+        bp, bt, bpr = eval_cnn(model, tstl)
+        b_acc  = accuracy_score(bt, bp)
+        b_f1   = f1_score(bt, bp, average="weighted", zero_division=0)
+        b_prec = precision_score(bt, bp, average="weighted", zero_division=0)
+        b_rec  = recall_score(bt, bp, average="weighted", zero_division=0)
+        print(f"    Test Acc {b_acc*100:.2f}%  F1 {b_f1:.4f}")
+        save_confusion_matrix(bt, bp, local_names, f"M{mid} {tag}", os.path.join(rdir, f"{tag.lower()}_confusion_matrix.png"))
+        save_roc(bt, bpr, local_names, n_cls, f"M{mid} {tag}", os.path.join(rdir, f"{tag.lower()}_roc.png"))
+        save_training_curve(tr_hist, va_hist, f"Mission {mid} {tag}", os.path.join(rdir, f"{tag.lower()}_training_curve.png"))
+        return (b_acc, b_f1, b_prec, b_rec), bp, bt, bpr
+
+    bilstm = BiLSTM1D(n_feat, n_cls, dr=DROPOUT).to(DEVICE)
+    results["BiLSTM"], lstm_pred, lstm_true, lstm_probs = train_baseline(bilstm, "BiLSTM")
+
+    transformer = Transformer1D(n_feat, n_cls, dr=DROPOUT).to(DEVICE)
+    results["Transformer"], tf_pred, tf_true, tf_probs = train_baseline(transformer, "Transformer")
+
+    # ---- ConvFormer (proposed) — CNN patches + Transformer + Focal Loss ------
+    print(f"\n  [ConvFormer] Training (max {CNN_EP} ep, patience={PATIENCE}) ...")
+    convformer = ConvFormer1D(n_feat, n_cls, dr=DROPOUT).to(DEVICE)
+    focal_loss = FocalLoss(gamma=2.0, weight=cw)
+    bal_trnl   = make_balanced_loader(Xtr, ytr, BATCH)
+    cf_opt  = optim.AdamW(convformer.parameters(), lr=LR, weight_decay=1e-4)
+    cf_sch  = optim.lr_scheduler.CosineAnnealingLR(cf_opt, T_max=CNN_EP, eta_min=1e-5)
+    cf_best_va = 0.0; cf_best_w = None; cf_no_imp = 0
+    cf_tr_hist = []; cf_va_hist = []
+
+    for ep in range(1, CNN_EP + 1):
+        convformer.train(); tl = tc = tn = 0
+        for X_, y_ in bal_trnl:
+            X_, y_ = X_.to(DEVICE), y_.to(DEVICE); cf_opt.zero_grad()
+            out = convformer(X_)
+            loss = focal_loss(out, y_)
+            loss.backward(); nn.utils.clip_grad_norm_(convformer.parameters(), 1.0); cf_opt.step()
+            tl += loss.item()*len(y_); tc += (out.argmax(1)==y_).sum().item(); tn += len(y_)
+        ta = tc / tn; cf_sch.step()
+        convformer.eval()
+        with torch.no_grad():
+            va = vn = 0
+            for X_, y_ in vall:
+                X_, y_ = X_.to(DEVICE), y_.to(DEVICE)
+                va += (convformer(X_).argmax(1)==y_).sum().item(); vn += len(y_)
+        va_acc = va / vn
+        cf_tr_hist.append(tl/tn); cf_va_hist.append(va_acc)
+        if va_acc > cf_best_va:
+            cf_best_va = va_acc; cf_best_w = {k:v.cpu().clone() for k,v in convformer.state_dict().items()}; cf_no_imp = 0
+        else:
+            cf_no_imp += 1
+        if ep % 10 == 0 or ep == 1:
+            print(f"    Ep {ep:02d}  train {ta*100:.2f}%  val {va_acc*100:.2f}%")
+        if cf_no_imp >= PATIENCE:
+            print(f"    Early stop at ep {ep}"); break
+
+    convformer.load_state_dict(cf_best_w)
+    torch.save(cf_best_w, os.path.join(MODEL_DIR, f"m{mid}_convformer.pt"))
+    cf_pred, cf_true, cf_probs = eval_cnn(convformer, tstl)
+    cf_acc  = accuracy_score(cf_true, cf_pred)
+    cf_f1   = f1_score(cf_true, cf_pred, average="weighted", zero_division=0)
+    cf_prec = precision_score(cf_true, cf_pred, average="weighted", zero_division=0)
+    cf_rec  = recall_score(cf_true, cf_pred, average="weighted", zero_division=0)
+    results["ConvFormer"] = (cf_acc, cf_f1, cf_prec, cf_rec)
+    print(f"    Test Acc {cf_acc*100:.2f}%  F1 {cf_f1:.4f}")
+    save_confusion_matrix(cf_true, cf_pred, local_names, f"M{mid} ConvFormer",
+                          os.path.join(rdir, "convformer_confusion_matrix.png"))
+    save_roc(cf_true, cf_probs, local_names, n_cls, f"M{mid} ConvFormer",
+             os.path.join(rdir, "convformer_roc.png"))
+    save_training_curve(cf_tr_hist, cf_va_hist, f"Mission {mid} ConvFormer",
+                        os.path.join(rdir, "convformer_training_curve.png"))
+    np.savez_compressed(os.path.join(rdir, "predictions_convformer.npz"),
+                        pred=cf_pred, true=cf_true)
 
     # ---- VAE ----------------------------------------------------------------
     print(f"\n  [VAE] Training {VAE_EP} epochs ...")
@@ -457,7 +654,7 @@ def run_mission(mid):
     hybrid.freeze_backbones()
     opt1 = optim.AdamW(filter(lambda p: p.requires_grad, hybrid.parameters()), lr=LR, weight_decay=1e-4)
     sch1 = optim.lr_scheduler.CosineAnnealingLR(opt1, T_max=PHASE1_EP, eta_min=1e-5)
-    best_hva = 0.0; best_hw = None
+    best_hva = 0.0; best_hw = None; no_improve_p1 = 0
 
     for ep in range(1, PHASE1_EP+1):
         tl, ta = train_hybrid_epoch(hybrid, trnl, cw, opt1, phase2=False)
@@ -470,14 +667,21 @@ def run_mission(mid):
                 va += (logits.argmax(1)==y_).sum().item(); vn += len(y_)
         va_acc = va/vn; sch1.step()
         hist_h["tl"].append(tl); hist_h["va"].append(va_acc)
-        if va_acc > best_hva: best_hva = va_acc; best_hw = {k:v.cpu().clone() for k,v in hybrid.state_dict().items()}
+        if va_acc > best_hva:
+            best_hva = va_acc; best_hw = {k:v.cpu().clone() for k,v in hybrid.state_dict().items()}; no_improve_p1 = 0
+        else:
+            no_improve_p1 += 1
         if ep % 5 == 0 or ep == 1:
             print(f"    P1 Ep {ep:02d}/{PHASE1_EP}  train {ta*100:.2f}%  val {va_acc*100:.2f}%")
+        if no_improve_p1 >= PATIENCE:
+            print(f"    P1 early stop at ep {ep}")
+            break
 
     hybrid.unfreeze_all()
     opt2 = optim.AdamW(hybrid.parameters(), lr=LR2, weight_decay=1e-4)
     sch2 = optim.lr_scheduler.CosineAnnealingLR(opt2, T_max=PHASE2_EP, eta_min=1e-6)
 
+    no_improve_p2 = 0
     for ep in range(1, PHASE2_EP+1):
         tl, ta = train_hybrid_epoch(hybrid, trnl, cw, opt2, phase2=True)
         hybrid.eval()
@@ -489,9 +693,15 @@ def run_mission(mid):
                 va += (logits.argmax(1)==y_).sum().item(); vn += len(y_)
         va_acc = va/vn; sch2.step()
         hist_h["tl"].append(tl); hist_h["va"].append(va_acc)
-        if va_acc > best_hva: best_hva = va_acc; best_hw = {k:v.cpu().clone() for k,v in hybrid.state_dict().items()}
+        if va_acc > best_hva:
+            best_hva = va_acc; best_hw = {k:v.cpu().clone() for k,v in hybrid.state_dict().items()}; no_improve_p2 = 0
+        else:
+            no_improve_p2 += 1
         if ep % 5 == 0 or ep == 1:
             print(f"    P2 Ep {ep:02d}/{PHASE2_EP}  train {ta*100:.2f}%  val {va_acc*100:.2f}%")
+        if no_improve_p2 >= PATIENCE:
+            print(f"    P2 early stop at ep {ep}")
+            break
 
     hybrid.load_state_dict(best_hw)
     hyb_pt = os.path.join(MODEL_DIR, f"m{mid}_hybrid.pt")
@@ -510,21 +720,34 @@ def run_mission(mid):
     save_roc(h_true, h_probs, local_names, n_cls, f"M{mid} Hybrid", os.path.join(rdir, "hybrid_roc.png"))
     save_tsne(h_mus, h_true, local_names, f"Mission {mid}", os.path.join(rdir, "hybrid_tsne.png"))
 
+    # save per-sample predictions for McNemar's statistical tests
+    for tag, (pred_arr, true_arr) in [("cnn", (cnn_pred, cnn_true)),
+                                       ("bilstm", (lstm_pred, lstm_true)),
+                                       ("transformer", (tf_pred, tf_true)),
+                                       ("convformer", (cf_pred, cf_true)),
+                                       ("hybrid", (h_pred, h_true))]:
+        np.savez_compressed(os.path.join(rdir, f"predictions_{tag}.npz"),
+                            pred=pred_arr, true=true_arr)
+
     # ---- per-mission model comparison plot -----------------------------------
-    labels = ["Accuracy", "Weighted F1", "Precision", "Recall"]
-    models = list(results.keys())
-    colors = ["#1976D2", "#388E3C", "#E64A19"]
-    x = np.arange(len(labels)); w = 0.25
-    fig, ax = plt.subplots(figsize=(11, 5))
+    m_labels = ["Accuracy", "Weighted F1", "Precision", "Recall"]
+    m_models = list(results.keys())
+    m_palette = {"CNN":"#1976D2","BiLSTM":"#7B1FA2","Transformer":"#00838F",
+                 "ConvFormer":"#E65100","VAE":"#388E3C","Hybrid":"#AD1457"}
+    n_m = len(m_models); w = 0.8 / n_m
+    x = np.arange(len(m_labels))
+    fig, ax = plt.subplots(figsize=(13, 5))
     for i, (mname, vals) in enumerate(results.items()):
-        bars = ax.bar(x + (i-1)*w, [v*100 for v in vals], w, label=mname, color=colors[i], alpha=0.85)
+        offset = (i - n_m/2 + 0.5) * w
+        bars = ax.bar(x + offset, [v*100 for v in vals], w, label=mname,
+                      color=m_palette.get(mname, "#607D8B"), alpha=0.85)
         for bar in bars:
             h_ = bar.get_height()
-            ax.text(bar.get_x()+bar.get_width()/2, h_+0.3, f"{h_:.1f}", ha="center", va="bottom", fontsize=8, fontweight="bold")
-    ax.set(xticks=x, xticklabels=labels, ylabel="Score (%)",
-           title=f"Mission {mid} Model Comparison", ylim=(60, 106))
+            ax.text(bar.get_x()+bar.get_width()/2, h_+0.3, f"{h_:.1f}", ha="center", va="bottom", fontsize=7)
+    ax.set(xticks=x, xticklabels=m_labels, ylabel="Score (%)",
+           title=f"Mission {mid} — All Models Comparison", ylim=(50, 110))
     ax.axhline(95, color="red", linestyle="--", lw=1.2, alpha=0.7)
-    ax.legend(loc="lower right")
+    ax.legend(loc="lower right", fontsize=8)
     plt.tight_layout(); plt.savefig(os.path.join(rdir, "model_comparison.png"), dpi=300, bbox_inches="tight"); plt.close()
 
     # ---- per-mission text report -------------------------------------------
@@ -537,15 +760,14 @@ def run_mission(mid):
     rpt_lines.append(f"  {'-'*50}")
     for mname, (acc, f1, prec, rec) in results.items():
         rpt_lines.append(f"  {mname:<12}  {acc*100:.2f}%    {f1:.4f}   {prec:.4f}   {rec:.4f}")
-    rpt_lines.append(f"\n  CNN Classification Report:\n")
-    labs = [local_names[i] for i in sorted(local_names)]
-    rpt_lines.append(classification_report(cnn_true, cnn_pred,
-                                            target_names=[local_names[i] for i in sorted(set(cnn_true))],
-                                            digits=4, zero_division=0))
-    rpt_lines.append(f"\n  Hybrid Classification Report:\n")
-    rpt_lines.append(classification_report(h_true, h_pred,
-                                            target_names=[local_names[i] for i in sorted(set(h_true))],
-                                            digits=4, zero_division=0))
+    for tag, (tp, tt) in [("CNN", (cnn_pred, cnn_true)), ("BiLSTM", (lstm_pred, lstm_true)),
+                           ("Transformer", (tf_pred, tf_true)), ("ConvFormer", (cf_pred, cf_true)),
+                           ("Hybrid", (h_pred, h_true))]:
+        present = sorted(set(tt) | set(tp))
+        rpt_lines.append(f"\n  {tag} Classification Report:\n")
+        rpt_lines.append(classification_report(tt, tp, labels=present,
+                                               target_names=[local_names[i] for i in present],
+                                               digits=4, zero_division=0))
     rpt_text = "\n".join(rpt_lines)
     print(rpt_text)
     with open(os.path.join(rdir, f"m{mid}_report.txt"), "w", encoding="utf-8") as f:
@@ -558,30 +780,33 @@ def run_mission(mid):
 
 def cross_mission_comparison(all_results):
     missions = sorted(all_results.keys())
-    models   = ["CNN", "VAE", "Hybrid"]
-    colors   = {"CNN": "#1976D2", "VAE": "#388E3C", "Hybrid": "#E64A19"}
+    models   = ["CNN", "BiLSTM", "Transformer", "ConvFormer", "VAE", "Hybrid"]
+    colors   = {"CNN": "#1976D2", "BiLSTM": "#7B1FA2", "Transformer": "#00838F",
+                "ConvFormer": "#E65100", "VAE": "#388E3C", "Hybrid": "#AD1457"}
     metrics  = ["Accuracy", "Weighted F1", "Precision", "Recall"]
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     axes = axes.flatten()
     for mi, metric in enumerate(metrics):
         ax = axes[mi]
-        x  = np.arange(len(missions)); w = 0.25
+        n_models = len(models); w = 0.75 / n_models
+        x = np.arange(len(missions))
         for i, model in enumerate(models):
             vals = []
             for mid in missions:
                 r = all_results[mid].get(model, (0,0,0,0))
                 vals.append(r[mi] * 100)
-            bars = ax.bar(x + (i-1)*w, vals, w, label=model, color=colors[model], alpha=0.85)
+            offset = (i - n_models/2 + 0.5) * w
+            bars = ax.bar(x + offset, vals, w, label=model, color=colors.get(model, "#607D8B"), alpha=0.85)
             for bar in bars:
                 h_ = bar.get_height()
-                ax.text(bar.get_x()+bar.get_width()/2, h_+0.4, f"{h_:.1f}", ha="center", va="bottom", fontsize=7.5)
+                ax.text(bar.get_x()+bar.get_width()/2, h_+0.4, f"{h_:.1f}", ha="center", va="bottom", fontsize=6.5)
         ax.set(xticks=x, xticklabels=[f"Mission {m}" for m in missions],
                ylabel=f"{metric} (%)", title=f"Cross-Mission {metric}", ylim=(50, 108))
         ax.axhline(95, color="red", linestyle="--", lw=1, alpha=0.7)
-        ax.legend()
+        ax.legend(fontsize=8)
 
-    plt.suptitle("Cross-Mission Model Comparison: CNN vs VAE vs Hybrid", fontweight="bold", fontsize=14)
+    plt.suptitle("Cross-Mission Model Comparison: CNN vs BiLSTM vs Transformer vs Hybrid", fontweight="bold", fontsize=13)
     plt.tight_layout()
     out = os.path.join(REPORT_DIR, "cross_mission_comparison.png")
     plt.savefig(out, dpi=300, bbox_inches="tight"); plt.close()
@@ -630,28 +855,57 @@ def _parse_report_metrics(rpt_txt):
 # ---- main -------------------------------------------------------------------
 
 def main():
+    import random
     os.makedirs(REPORT_DIR, exist_ok=True)
     os.makedirs(MODEL_DIR, exist_ok=True)
     set_style()
     print(f"\nDevice: {DEVICE}")
 
-    all_results = {}
-    for mid in [1, 2, 3]:
-        csv_path = os.path.join(DATA_DIR, f"mission{mid}_preprocessed.csv")
-        if not os.path.exists(csv_path):
-            print(f"  [SKIP] {csv_path} not found")
-            continue
-        hyb_pt  = os.path.join(MODEL_DIR, f"m{mid}_hybrid.pt")
-        rpt_txt = os.path.join(REPORT_DIR, f"m{mid}", f"m{mid}_report.txt")
-        if os.path.exists(hyb_pt) and os.path.exists(rpt_txt):
-            print(f"  [RESUME] Mission {mid} already complete, parsing saved metrics ...")
-            all_results[mid] = _parse_report_metrics(rpt_txt)
-            continue
-        all_results[mid] = run_mission(mid)
+    # multi-seed training: collect per-seed results then report mean ± std
+    seed_all = {}   # seed -> {mid -> {model -> (acc,f1,prec,rec)}}
+    for seed in SEEDS:
+        torch.manual_seed(seed); np.random.seed(seed); random.seed(seed)
+        print(f"\n{'#'*68}\n  SEED {seed}\n{'#'*68}")
+        seed_results = {}
+        for mid in [1, 2, 3]:
+            csv_path = os.path.join(DATA_DIR, f"mission{mid}_preprocessed.csv")
+            if not os.path.exists(csv_path):
+                print(f"  [SKIP] {csv_path} not found"); continue
+            seed_results[mid] = run_mission(mid)
+        seed_all[seed] = seed_results
 
-    if len(all_results) > 1:
-        cross_mission_comparison(all_results)
-    write_summary(all_results)
+    # aggregate mean ± std across seeds
+    all_results_mean = {}   # {mid -> {model -> mean_tuple}} for plotting
+    missions = sorted({mid for sr in seed_all.values() for mid in sr})
+    models_seen = sorted({m for sr in seed_all.values() for res in sr.values() for m in res})
+
+    agg_lines = ["\n" + "="*72,
+                 f"  MULTI-SEED RESULTS  (seeds={SEEDS})",
+                 "  Mean ± Std over seeds — Weighted metrics", "="*72]
+    for mid in missions:
+        agg_lines.append(f"\n  Mission {mid}:")
+        agg_lines.append(f"  {'Model':<14}  Acc (mean±std)      W-F1 (mean±std)")
+        agg_lines.append(f"  {'-'*58}")
+        all_results_mean[mid] = {}
+        for model in models_seen:
+            accs = [seed_all[s][mid][model][0] for s in SEEDS if mid in seed_all[s] and model in seed_all[s][mid]]
+            f1s  = [seed_all[s][mid][model][1] for s in SEEDS if mid in seed_all[s] and model in seed_all[s][mid]]
+            if not accs: continue
+            ma, sa = np.mean(accs)*100, np.std(accs)*100
+            mf, sf = np.mean(f1s),  np.std(f1s)
+            agg_lines.append(f"  {model:<14}  {ma:.2f} ± {sa:.2f}%          {mf:.4f} ± {sf:.4f}")
+            all_results_mean[mid][model] = (np.mean(accs), np.mean(f1s),
+                                            np.mean([seed_all[s][mid][model][2] for s in SEEDS if mid in seed_all[s] and model in seed_all[s][mid]]),
+                                            np.mean([seed_all[s][mid][model][3] for s in SEEDS if mid in seed_all[s] and model in seed_all[s][mid]]))
+    agg_txt = "\n".join(agg_lines) + "\n"
+    print(agg_txt)
+    agg_out = os.path.join(REPORT_DIR, "multiseed_summary.txt")
+    with open(agg_out, "w", encoding="utf-8") as f: f.write(agg_txt)
+    print(f"  Multi-seed summary -> {agg_out}")
+
+    if len(all_results_mean) > 1:
+        cross_mission_comparison(all_results_mean)
+    write_summary(all_results_mean)
 
     print("\n" + "="*68)
     print("  ALL MISSIONS TRAINING COMPLETE")

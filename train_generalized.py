@@ -37,7 +37,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import label_binarize
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 
 warnings.filterwarnings("ignore")
 
@@ -51,10 +51,12 @@ GEN_PT       = r"d:\UbtVM-Def\Models\models\generalized_hybrid.pt"
 WINDOW     = 50
 STEP       = 2
 BATCH      = 512       # larger batch for faster CPU training
-PHASE1_EP  = 12
-PHASE2_EP  = 18
+PHASE1_EP  = 60
+PHASE2_EP  = 80
+PATIENCE   = 12
 LR1        = 1e-3
 LR2        = 5e-5
+RUN_LOMO   = True
 DROPOUT    = 0.3
 LATENT_DIM = 64
 W_CLS      = 1.0
@@ -191,11 +193,20 @@ class HybridModel(nn.Module):
 
 # ---- losses -----------------------------------------------------------------
 
-def class_weights(ytr, n_cls, device):
+def class_weights(ytr, n_cls, device, max_w=3.0):
     ci, cn = np.unique(ytr, return_counts=True)
     wts = np.ones(n_cls, np.float32)
-    for c, n in zip(ci, cn): wts[c] = len(ytr) / (len(ci) * n)
+    for c, n in zip(ci, cn): wts[c] = min(len(ytr) / (len(ci) * n), max_w)
     return torch.tensor(wts).to(device)
+
+
+def make_balanced_loader(X, y, batch_size):
+    cls, cnts = np.unique(y, return_counts=True)
+    w = np.zeros(len(y), dtype=np.float32)
+    for c, n in zip(cls, cnts):
+        w[y == c] = 1.0 / n
+    sampler = WeightedRandomSampler(torch.from_numpy(w), len(w), replacement=True)
+    return DataLoader(TelDS(X, y), batch_size, sampler=sampler, num_workers=0)
 
 
 def joint_loss(logits, y, recon, x, mu, lv, cw):
@@ -350,27 +361,28 @@ def main():
     Xw, yw, mw = make_windows_indexed(X_full, y_full, mid_arr, WINDOW, STEP)
     print(f"  Total windows: {len(Xw):,}")
 
-    # chronological split per mission (prevents temporal leakage)
+    # per-class chronological split per mission — guarantees all classes in test
     train_idx, val_idx, test_idx = [], [], []
     for m in sorted(set(mw.tolist())):
         m_idx = np.where(mw == m)[0]
-        n = len(m_idx)
-        n_tr = int(0.70 * n); n_va = int(0.85 * n)
-        train_idx.extend(m_idx[:n_tr].tolist())
-        val_idx.extend(m_idx[n_tr:n_va].tolist())
-        test_idx.extend(m_idx[n_va:].tolist())
+        m_y   = yw[m_idx]
+        for cls in np.unique(m_y):
+            cls_idx = m_idx[m_y == cls]
+            n = len(cls_idx)
+            n_te = max(1, int(n * 0.15))
+            n_va = max(1, int(n * 0.15))
+            test_idx.extend(cls_idx[-n_te:].tolist())
+            val_idx.extend(cls_idx[-(n_te + n_va):-n_te].tolist())
+            train_idx.extend(cls_idx[:-(n_te + n_va)].tolist())
+    train_idx = sorted(train_idx); val_idx = sorted(val_idx); test_idx = sorted(test_idx)
     Xtr, ytr, mtr = Xw[train_idx], yw[train_idx], mw[train_idx]
     Xva, yva      = Xw[val_idx],   yw[val_idx]
     Xte, yte, mte = Xw[test_idx],  yw[test_idx], mw[test_idx]
     print(f"  Train:{len(Xtr):,}  Val:{len(Xva):,}  Test:{len(Xte):,}")
+    print(f"  Test class dist: { {c: int((yte==c).sum()) for c in np.unique(yte)} }")
 
-    # class weights
-    ci, cn = np.unique(ytr, return_counts=True)
-    wts = np.ones(n_cls, np.float32)
-    for c, n in zip(ci, cn): wts[c] = len(ytr) / (len(ci) * n)
-    cw = torch.tensor(wts).to(DEVICE)
-
-    trnl = DataLoader(TelDS(Xtr, ytr), BATCH, shuffle=True,  num_workers=0)
+    cw   = class_weights(ytr, n_cls, DEVICE)
+    trnl = DataLoader(TelDS(Xtr, ytr), BATCH, shuffle=True, num_workers=0)
     vall = DataLoader(TelDS(Xva, yva), BATCH, shuffle=False, num_workers=0)
     tstl = DataLoader(TelDS(Xte, yte), BATCH, shuffle=False, num_workers=0)
 
@@ -390,10 +402,11 @@ def main():
         best_va = 0.0; best_w = None
 
         # -- Phase 1: meta-learner warmup -----------------------------------------
-        print(f"\n{'='*60}\n  Phase 1: Meta-learner warmup ({PHASE1_EP} epochs)\n{'='*60}")
+        print(f"\n{'='*60}\n  Phase 1: Meta-learner warmup (max {PHASE1_EP} epochs, patience={PATIENCE})\n{'='*60}")
         hybrid.freeze_backbones()
         opt1 = optim.AdamW(filter(lambda p: p.requires_grad, hybrid.parameters()), lr=LR1, weight_decay=1e-4)
         sch1 = optim.lr_scheduler.CosineAnnealingLR(opt1, T_max=PHASE1_EP, eta_min=1e-5)
+        no_improve_p1 = 0
 
         for ep in range(1, PHASE1_EP+1):
             tl, ta = train_epoch(hybrid, trnl, cw, opt1, phase2=False)
@@ -406,15 +419,21 @@ def main():
                     va += (logits.argmax(1)==y_).sum().item(); vn += len(y_)
             va_acc = va/vn; sch1.step()
             tl_hist.append(tl); va_hist.append(va_acc)
-            if va_acc > best_va: best_va = va_acc; best_w = {k:v.cpu().clone() for k,v in hybrid.state_dict().items()}
+            if va_acc > best_va:
+                best_va = va_acc; best_w = {k:v.cpu().clone() for k,v in hybrid.state_dict().items()}; no_improve_p1 = 0
+            else:
+                no_improve_p1 += 1
             if ep % 5 == 0 or ep == 1:
                 print(f"  Ep {ep:02d}/{PHASE1_EP}  train {ta*100:.2f}%  val {va_acc*100:.2f}%")
+            if no_improve_p1 >= PATIENCE:
+                print(f"  P1 early stop at ep {ep}"); break
 
         # -- Phase 2: joint fine-tune ---------------------------------------------
-        print(f"\n{'='*60}\n  Phase 2: Joint fine-tune ({PHASE2_EP} epochs)\n{'='*60}")
+        print(f"\n{'='*60}\n  Phase 2: Joint fine-tune (max {PHASE2_EP} epochs, patience={PATIENCE})\n{'='*60}")
         hybrid.unfreeze_all()
         opt2 = optim.AdamW(hybrid.parameters(), lr=LR2, weight_decay=1e-4)
         sch2 = optim.lr_scheduler.CosineAnnealingLR(opt2, T_max=PHASE2_EP, eta_min=1e-6)
+        no_improve_p2 = 0
 
         for ep in range(1, PHASE2_EP+1):
             tl, ta = train_epoch(hybrid, trnl, cw, opt2, phase2=True)
@@ -427,9 +446,14 @@ def main():
                     va += (logits.argmax(1)==y_).sum().item(); vn += len(y_)
             va_acc = va/vn; sch2.step()
             tl_hist.append(tl); va_hist.append(va_acc)
-            if va_acc > best_va: best_va = va_acc; best_w = {k:v.cpu().clone() for k,v in hybrid.state_dict().items()}
+            if va_acc > best_va:
+                best_va = va_acc; best_w = {k:v.cpu().clone() for k,v in hybrid.state_dict().items()}; no_improve_p2 = 0
+            else:
+                no_improve_p2 += 1
             if ep % 5 == 0 or ep == 1:
                 print(f"  Ep {ep:02d}/{PHASE2_EP}  train {ta*100:.2f}%  val {va_acc*100:.2f}%  lr={sch2.get_last_lr()[0]:.1e}")
+            if no_improve_p2 >= PATIENCE:
+                print(f"  P2 early stop at ep {ep}"); break
 
         hybrid.load_state_dict(best_w)
         torch.save(best_w, GEN_PT)
@@ -467,75 +491,75 @@ def main():
         print(f"    Mission {m}: Acc {m_acc*100:.2f}%  F1 {m_f1:.4f}  (n_windows={mask.sum()})")
 
     # -- Leave-One-Mission-Out (LOMO) evaluation -------------------------------
-    print(f"\n{'='*60}\n  Leave-One-Mission-Out (LOMO) Generalization Test\n{'='*60}")
     lomo_results = {}
-    all_missions = sorted(set(mw.tolist()))
+    if RUN_LOMO:
+        print(f"\n{'='*60}\n  Leave-One-Mission-Out (LOMO) Generalization Test\n{'='*60}")
+        all_missions = sorted(set(mw.tolist()))
+        for held_out in all_missions:
+            print(f"\n  Held-out mission: {held_out}")
+            mask_train = mw != held_out
+            mask_test  = mw == held_out
 
-    for held_out in all_missions:
-        print(f"\n  Held-out mission: {held_out}")
-        mask_train = mw != held_out
-        mask_test  = mw == held_out
+            X_ltr = Xw[mask_train]; y_ltr = yw[mask_train]
+            X_lte = Xw[mask_test];  y_lte = yw[mask_test]
 
-        X_ltr = Xw[mask_train]; y_ltr = yw[mask_train]
-        X_lte = Xw[mask_test];  y_lte = yw[mask_test]
+            if len(X_ltr) < 100 or len(X_lte) < 10:
+                print(f"    [SKIP] too few samples")
+                continue
 
-        if len(X_ltr) < 100 or len(X_lte) < 10:
-            print(f"    [SKIP] too few samples")
-            continue
+            n_l = len(X_ltr)
+            Xl2, yl2 = X_ltr[:int(0.85 * n_l)], y_ltr[:int(0.85 * n_l)]
+            Xv2, yv2 = X_ltr[int(0.85 * n_l):], y_ltr[int(0.85 * n_l):]
 
-        # chronological train/val split for LOMO
-        n_l = len(X_ltr)
-        Xl2, yl2 = X_ltr[:int(0.85 * n_l)], y_ltr[:int(0.85 * n_l)]
-        Xv2, yv2 = X_ltr[int(0.85 * n_l):], y_ltr[int(0.85 * n_l):]
+            cw_l  = class_weights(yl2, n_cls, DEVICE)
+            lt_dl = DataLoader(TelDS(Xl2, yl2), BATCH, shuffle=True, num_workers=0)
+            lv_dl = DataLoader(TelDS(Xv2, yv2), BATCH, shuffle=False, num_workers=0)
+            le_dl = DataLoader(TelDS(X_lte, y_lte), BATCH, shuffle=False, num_workers=0)
 
-        cw_l = class_weights(yl2, n_cls, DEVICE)
-        lt_dl = DataLoader(TelDS(Xl2, yl2), BATCH, shuffle=True,  num_workers=0)
-        lv_dl = DataLoader(TelDS(Xv2, yv2), BATCH, shuffle=False, num_workers=0)
-        le_dl = DataLoader(TelDS(X_lte, y_lte), BATCH, shuffle=False, num_workers=0)
+            l_cnn = CNN1D(n_feat, n_cls, DROPOUT).to(DEVICE)
+            l_vae = VAE1D(n_feat, WINDOW, LATENT_DIM).to(DEVICE)
+            l_hyb = HybridModel(l_cnn, l_vae, n_cls).to(DEVICE)
+            l_hyb.freeze_backbones()
+            l_opt = optim.AdamW(filter(lambda p: p.requires_grad, l_hyb.parameters()), lr=LR1, weight_decay=1e-4)
 
-        # fresh model for LOMO
-        l_cnn = CNN1D(n_feat, n_cls, DROPOUT).to(DEVICE)
-        l_vae = VAE1D(n_feat, WINDOW, LATENT_DIM).to(DEVICE)
-        l_hyb = HybridModel(l_cnn, l_vae, n_cls).to(DEVICE)
-        l_hyb.freeze_backbones()
-        l_opt = optim.AdamW(filter(lambda p: p.requires_grad, l_hyb.parameters()), lr=LR1, weight_decay=1e-4)
+            best_lva = 0.0; best_lw = None
+            for ep in range(1, 8):
+                train_epoch(l_hyb, lt_dl, cw_l, l_opt, phase2=False)
+                l_hyb.eval()
+                with torch.no_grad():
+                    va = vn = 0
+                    for X_, y_ in lv_dl:
+                        X_, y_ = X_.to(DEVICE), y_.to(DEVICE)
+                        logits, _, _, _ = l_hyb(X_)
+                        va += (logits.argmax(1)==y_).sum().item(); vn += len(y_)
+                va_acc = va/vn
+                if va_acc > best_lva: best_lva = va_acc; best_lw = {k:v.cpu().clone() for k,v in l_hyb.state_dict().items()}
 
-        best_lva = 0.0; best_lw = None
-        for ep in range(1, 8):
-            train_epoch(l_hyb, lt_dl, cw_l, l_opt, phase2=False)
-            l_hyb.eval()
-            with torch.no_grad():
-                va = vn = 0
-                for X_, y_ in lv_dl:
-                    X_, y_ = X_.to(DEVICE), y_.to(DEVICE)
-                    logits, _, _, _ = l_hyb(X_)
-                    va += (logits.argmax(1)==y_).sum().item(); vn += len(y_)
-            va_acc = va/vn
-            if va_acc > best_lva: best_lva = va_acc; best_lw = {k:v.cpu().clone() for k,v in l_hyb.state_dict().items()}
+            l_hyb.unfreeze_all()
+            l_opt2 = optim.AdamW(l_hyb.parameters(), lr=LR2, weight_decay=1e-4)
+            for ep in range(1, 12):
+                train_epoch(l_hyb, lt_dl, cw_l, l_opt2, phase2=True)
+                l_hyb.eval()
+                with torch.no_grad():
+                    va = vn = 0
+                    for X_, y_ in lv_dl:
+                        X_, y_ = X_.to(DEVICE), y_.to(DEVICE)
+                        logits, _, _, _ = l_hyb(X_)
+                        va += (logits.argmax(1)==y_).sum().item(); vn += len(y_)
+                va_acc = va/vn
+                if va_acc > best_lva: best_lva = va_acc; best_lw = {k:v.cpu().clone() for k,v in l_hyb.state_dict().items()}
 
-        l_hyb.unfreeze_all()
-        l_opt2 = optim.AdamW(l_hyb.parameters(), lr=LR2, weight_decay=1e-4)
-        for ep in range(1, 12):
-            train_epoch(l_hyb, lt_dl, cw_l, l_opt2, phase2=True)
-            l_hyb.eval()
-            with torch.no_grad():
-                va = vn = 0
-                for X_, y_ in lv_dl:
-                    X_, y_ = X_.to(DEVICE), y_.to(DEVICE)
-                    logits, _, _, _ = l_hyb(X_)
-                    va += (logits.argmax(1)==y_).sum().item(); vn += len(y_)
-            va_acc = va/vn
-            if va_acc > best_lva: best_lva = va_acc; best_lw = {k:v.cpu().clone() for k,v in l_hyb.state_dict().items()}
+            if best_lw: l_hyb.load_state_dict(best_lw)
+            lp, lt, *_ = eval_model(l_hyb, le_dl)
+            l_acc = accuracy_score(lt, lp)
+            l_f1  = f1_score(lt, lp, average="weighted", zero_division=0)
+            lomo_results[held_out] = {"acc": l_acc, "f1": l_f1}
+            print(f"    Mission {held_out} (test-only): Acc {l_acc*100:.2f}%  F1 {l_f1:.4f}")
 
-        if best_lw: l_hyb.load_state_dict(best_lw)
-        lp, lt, *_ = eval_model(l_hyb, le_dl)
-        l_acc = accuracy_score(lt, lp)
-        l_f1  = f1_score(lt, lp, average="weighted", zero_division=0)
-        lomo_results[held_out] = {"acc": l_acc, "f1": l_f1}
-        print(f"    Mission {held_out} (test-only): Acc {l_acc*100:.2f}%  F1 {l_f1:.4f}")
-
-    if lomo_results:
-        save_lomo_plot(lomo_results, os.path.join(REPORT_DIR, "generalized_lomo.png"))
+        if lomo_results:
+            save_lomo_plot(lomo_results, os.path.join(REPORT_DIR, "generalized_lomo.png"))
+    else:
+        print("\n[LOMO skipped — RUN_LOMO=False]")
 
     # -- text report ----------------------------------------------------------
     present = sorted(set(true) | set(pred))

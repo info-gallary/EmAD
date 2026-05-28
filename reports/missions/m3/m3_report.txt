@@ -1,32 +1,73 @@
 
 ==============================================================
   MISSION 3 - MODEL COMPARISON REPORT
-  Features: 35   Classes: [0, 2]   Test windows: 1,509
+  Features: 35   Classes: [0, 2]   Test windows: 1,507
 ==============================================================
 
   Model         Acc      W-F1     Prec     Rec
   --------------------------------------------------
-  CNN           100.00%    1.0000   1.0000   1.0000
-  VAE           99.87%    0.0000   0.0000   0.0000
-  Hybrid        100.00%    1.0000   1.0000   1.0000
+  CNN           91.84%    0.9134   0.9266   0.9184
+  BiLSTM        99.34%    0.9933   0.9934   0.9934
+  Transformer   99.87%    0.9987   0.9987   0.9987
+  ConvFormer    99.54%    0.9953   0.9954   0.9954
+  VAE           82.02%    0.5187   0.9733   0.3535
+  Hybrid        91.77%    0.9127   0.9261   0.9177
 
   CNN Classification Report:
 
-              precision    recall  f1-score   support
+               precision    recall  f1-score   support
 
-      Normal     1.0000    1.0000    1.0000      1509
+       Normal     0.8989    1.0000    0.9468      1094
+Power Anomaly     1.0000    0.7022    0.8250       413
 
-    accuracy                         1.0000      1509
-   macro avg     1.0000    1.0000    1.0000      1509
-weighted avg     1.0000    1.0000    1.0000      1509
+     accuracy                         0.9184      1507
+    macro avg     0.9495    0.8511    0.8859      1507
+ weighted avg     0.9266    0.9184    0.9134      1507
+
+
+  BiLSTM Classification Report:
+
+               precision    recall  f1-score   support
+
+       Normal     0.9909    1.0000    0.9955      1094
+Power Anomaly     1.0000    0.9758    0.9877       413
+
+     accuracy                         0.9934      1507
+    macro avg     0.9955    0.9879    0.9916      1507
+ weighted avg     0.9934    0.9934    0.9933      1507
+
+
+  Transformer Classification Report:
+
+               precision    recall  f1-score   support
+
+       Normal     0.9982    1.0000    0.9991      1094
+Power Anomaly     1.0000    0.9952    0.9976       413
+
+     accuracy                         0.9987      1507
+    macro avg     0.9991    0.9976    0.9983      1507
+ weighted avg     0.9987    0.9987    0.9987      1507
+
+
+  ConvFormer Classification Report:
+
+               precision    recall  f1-score   support
+
+       Normal     0.9936    1.0000    0.9968      1094
+Power Anomaly     1.0000    0.9831    0.9915       413
+
+     accuracy                         0.9954      1507
+    macro avg     0.9968    0.9915    0.9941      1507
+ weighted avg     0.9954    0.9954    0.9953      1507
 
 
   Hybrid Classification Report:
 
-              precision    recall  f1-score   support
+               precision    recall  f1-score   support
 
-      Normal     1.0000    1.0000    1.0000      1509
+       Normal     0.8982    1.0000    0.9464      1094
+Power Anomaly     1.0000    0.6998    0.8234       413
 
-    accuracy                         1.0000      1509
-   macro avg     1.0000    1.0000    1.0000      1509
-weighted avg     1.0000    1.0000    1.0000      1509
+     accuracy                         0.9177      1507
+    macro avg     0.9491    0.8499    0.8849      1507
+ weighted avg     0.9261    0.9177    0.9127      1507
