@@ -628,7 +628,7 @@ ConvFormer's stride-2 CNN stem reduces the Transformer's token count by 2×, yie
 
 ---
 
-## 11. Limitations
+## 12. Limitations
 
 We list limitations transparently and indicate how each is addressed in the current submission or deferred to future work.
 
@@ -647,7 +647,7 @@ We list limitations transparently and indicate how each is addressed in the curr
 
 ---
 
-## 12. Publication Guidance
+## 13. Publication Guidance
 
 ### Recommended Venue
 
@@ -681,7 +681,7 @@ We list limitations transparently and indicate how each is addressed in the curr
 
 ---
 
-## 13. Reproducibility Checklist
+## 14. Reproducibility Checklist
 
 - [x] All random seeds documented per mission (M1/M3: seed=42, M2: seed=3) — see Section 6.1.1 for selection protocol
 - [x] Preprocessing deterministic — no random augmentation
@@ -703,7 +703,7 @@ We list limitations transparently and indicate how each is addressed in the curr
 
 ---
 
-## 14. Environment
+## 15. Environment
 
 ```
 Python        3.12
@@ -720,7 +720,7 @@ Device        CPU (no GPU used)
 
 ---
 
-## 15. File Structure Reference
+## 16. File Structure Reference
 
 ```
 EmAD/
@@ -740,3 +740,86 @@ EmAD/
 ├── RESEARCH_CONTEXT.md           # Detailed architecture and contribution notes
 └── CO_AUTHOR_REPORT.md           # This document
 ```
+
+---
+
+## 17. Co-Author Writing Handoff
+
+This section is a **direct hand-off for the writing co-author**. It maps the technical content in this report to a standard journal-paper structure, lists exactly what is settled vs. open, and specifies what artefacts to attach to the submission.
+
+### 17.1 Recommended Paper Structure (mapped to this report)
+
+| Paper Section | Source Sections in This Report | Word-count Target |
+|---|---|---|
+| **Abstract** | Section 1 (Executive Summary) — condense to 200 words | 200 |
+| **1. Introduction** | Section 2 (Problem Statement) + Section 13 narrative Act 1 | 800 |
+| **2. Related Work** | Section 9 (literature comparison) | 600–800 |
+| **3. ESA-ADB Dataset and Preprocessing** | Section 3 (Dataset) + Section 4 (Preprocessing) | 1000 |
+| **4. Methodology** | Section 5 (Model Architectures, all 6) + Section 6.1 + Section 6.1.1 (split + seed protocol) | 1500–2000 |
+| **5. Experimental Results** | Section 6 (all subsections) + Section 8 (figures) | 1500 |
+| **6. Discussion: Architecture vs. Distribution Drift** | Section 10 (component analysis) + Section 11 (Key Findings) | 1200 |
+| **7. Cross-Mission Generalisation** | Section 6.5 (LOMO) + Section 11 finding 7 | 600 |
+| **8. Limitations and Future Work** | Section 12 (Limitations table) | 500 |
+| **9. Conclusion** | Synthesise Section 1 + Section 11 | 300 |
+| **References** | Section 9 table — full citations needed | — |
+
+**Total target:** 9,000–10,000 words (typical for Springer applied-ML venues).
+
+### 17.2 The Three Headline Claims (use verbatim in Introduction + Abstract)
+
+1. **Methodology:** "Random stratified splits on overlapping sliding-window telemetry produce systematically inflated test accuracy. We introduce per-class chronological splits (70/15/15) and quantify the inflation: M1 accuracy drops from 99.9% (random) to 98.9% (chronological)."
+2. **Empirical:** "On a temporally drifted test split (Mission 2, 6× class-ratio shift from training to test), only global self-attention (Transformer: 76.79%) escapes local-classifier collapse (CNN, ConvFormer, Hybrid: 34–36%). This 41 percentage-point gap is reproducible across architectures and isolates self-attention as the decisive component under non-stationary distributions."
+3. **Architectural:** "We propose ConvFormer1D, a CNN-stem-plus-Transformer hybrid that reduces self-attention FLOPs by 4× via stride-2 token compression while losing only 0.33 percentage points on stable binary detection — a Pareto-improved candidate for memory-constrained on-board deployment."
+
+### 17.3 Status of Each Component (settled vs. open)
+
+| Component | Status | Action Required by Co-Author |
+|---|---|---|
+| Per-mission results (6 models × 3 missions) | ✅ Settled | Copy `table1_results.tex` directly |
+| Generalised model results | ✅ Settled | Cite numbers from Section 6.4 |
+| LOMO results | ✅ Settled | Cite numbers from Section 6.5 |
+| ConvFormer architecture description | ✅ Settled | Reuse Section 5.3.1 text + diagram (suggest TikZ or PowerPoint) |
+| Temporal-drift quantification | ✅ Settled | Reuse Section 6.3 table |
+| Component-contribution analysis | ✅ Settled | Reuse Section 10 tables |
+| Literature comparison table | ✅ Settled | Section 9 — **co-author must add full BibTeX citations** |
+| Figures (12 publication figures, 300 DPI) | ✅ Generated | Pick 6–8 for paper; rest go to appendix/supplement |
+| Abstract | ⚠️ Needs drafting | Use Section 17.2 claims as backbone |
+| Introduction motivation paragraphs | ⚠️ Needs drafting | Mission-context narrative (why ESA, why anomaly typing matters) |
+| Related Work prose | ⚠️ Needs drafting | Convert Section 9 table into 600-word prose review |
+| Discussion (Section 6 of paper) | ⚠️ Needs drafting | Argue the architecture-vs-drift claim using Section 10.1 |
+| Conclusion + future work | ⚠️ Needs drafting | Standard wrap-up; mention domain adaptation as next step |
+| BibTeX file | ❌ Open | Build from Section 9 references + standard citations (Vaswani Transformer, He ResNet, Kingma VAE, Lin Focal Loss, ESA-ADB Kotowski 2024) |
+| Cover letter | ❌ Open | Standard journal letter — co-author drafts |
+
+### 17.4 Recommended Figures for the Paper (from 12 generated)
+
+| Paper Figure | Source File | Caption Suggestion |
+|---|---|---|
+| Fig 1 | `reports/publication/fig1_model_comparison.png` | "Test accuracy across six architectures on three ESA missions under chronological evaluation." |
+| Fig 2 | `reports/publication/fig2_accuracy_heatmap.png` | "Per-mission accuracy heatmap. Note Mission 2 collapse for local-receptive-field architectures." |
+| Fig 3 | `reports/missions/m2/m2_class_timeline.png` | "Temporal class-ratio evolution on Mission 2 showing the 6× Rare-Event shift between training and test periods." |
+| Fig 4 | `reports/publication/fig4_confusion_panel.png` | "Confusion matrices for top model per mission. Transformer on M2 achieves 97.4% Rare-Event recall." |
+| Fig 5 | `reports/hybrid/m1_tsne.png` | "t-SNE projection of Hybrid CNN-VAE latent space on Mission 1, showing class-separable clusters." |
+| Fig 6 | `reports/publication/fig3_radar.png` | "Radar chart of W-F1 across missions per architecture, illustrating ConvFormer's Pareto-efficient profile." |
+| (Appendix) | `reports/generalized/generalized_lomo.png` | LOMO collapse visualisation. |
+| (Appendix) | `reports/generalized/generalized_tsne.png` | Generalised model latent space. |
+
+### 17.5 Submission Checklist for Co-Author
+
+Before submitting to *Neural Computing and Applications* or *Applied Intelligence*:
+
+- [ ] Draft Abstract (200 words) using Section 17.2 claims
+- [ ] Write Introduction (~800 words) — motivation, contributions, paper outline
+- [ ] Convert Section 9 table into Related Work prose with full citations
+- [ ] Draft Methodology section from Sections 5 + 6.1 + 6.1.1
+- [ ] Assemble Results section using existing tables and figures
+- [ ] Draft Discussion centred on the architecture-vs-drift finding
+- [ ] Build BibTeX file (~15–20 references expected)
+- [ ] Choose final 6–8 figures from Section 17.4 candidates
+- [ ] Add `table1_results.tex` to paper
+- [ ] Statement of co-author contributions
+- [ ] Conflict-of-interest declaration
+- [ ] Data availability statement (link to GitHub repo)
+- [ ] Code availability statement (same GitHub repo + `requirements.txt`)
+- [ ] Cover letter highlighting the three claims from Section 17.2
+- [ ] Final consistency pass: numbers in abstract ↔ tables ↔ text
