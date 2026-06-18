@@ -36,3 +36,5 @@ Thumbs.db
 EmAD_project.zip
 data/
 models/
+
+.venv-gpu/
