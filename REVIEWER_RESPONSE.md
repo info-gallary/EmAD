@@ -500,11 +500,26 @@ matters more than noise-robustness, trees where a non-deep stack is acceptable.
 - The split is deterministic (no RNG) → exact test reproducibility.
 - Every revision result is a committed script + JSON under
   [revision/](revision/) and [reports/revision/](reports/revision/).
-- Environment is pinned: **numpy 1.26.4** (not 2.x) with torch 2.4.0 (Section 15 of
-  [CO_AUTHOR_REPORT.md](CO_AUTHOR_REPORT.md)).
+- Environment is **fully locked with [uv](https://docs.astral.sh/uv/)**:
+  [pyproject.toml](pyproject.toml) declares exact pins and [uv.lock](uv.lock) is a
+  fully-resolved, hash-verified lockfile (36 packages). A fresh machine reproduces the
+  exact environment with a single command:
 
-**Co-author task (📋).** Collate these into a single hyperparameter table and a
-`requirements.txt` freeze in the paper's appendix.
+  ```bash
+  uv sync          # creates .venv from uv.lock — byte-identical dependency set
+  uv run python train_all_missions.py
+  ```
+
+  Python is pinned to **3.12** ([.python-version](.python-version)); `numpy` is held at
+  **1.26.4** (not 2.x — torch 2.4.0 is built against the numpy 1.x C-API and segfaults
+  under numpy 2.x); the **CPU `torch 2.4.0+cpu`** build is sourced from PyTorch's own
+  index (declared in `[tool.uv.sources]`), so the lock is portable and GPU-free by
+  default. A plain-`pip` fallback ([requirements.txt](requirements.txt)) is also
+  provided. *(`matplotlib` was bumped 3.9.1 → 3.9.2: the 3.9.1 Windows wheels were
+  yanked upstream; 3.9.2 is the API-identical fix.)*
+
+**Co-author task (📋).** Collate the hyperparameters into a single appendix table; the
+environment freeze is now done (uv.lock + requirements.txt).
 
 ---
 

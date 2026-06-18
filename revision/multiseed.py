@@ -135,7 +135,10 @@ def main():
     models = ["CNN", "BiLSTM", "Transformer", "ConvFormer"]
     allres = {}
     t_start = time.time()
-    for mid in (1, 2, 3):
+    # M2 (headline/contested mission) first, then fast M3 control, then M1 last —
+    # each mission checkpoints to JSON on completion, so the headline seed-table is
+    # secured even if the slow M1 run is interrupted.
+    for mid in (2, 3, 1):
         data = load_split(mid)
         print(f"\n{'='*64}\n  MISSION {mid}  (n_feat={data[6]}, n_cls={data[7]})\n{'='*64}")
         mres = {}

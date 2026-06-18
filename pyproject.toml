@@ -1,7 +1,36 @@
 [project]
-name = "models"
+name = "emad"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.13"
-dependencies = []
+description = "EmAD — ESA multi-mission telemetry anomaly detection: benchmark, drift diagnosis, and post-hoc threshold calibration"
+requires-python = ">=3.12,<3.13"
+# Pinned to the exact versions the published results were produced with.
+# numpy is held at 1.26.x on purpose: torch 2.4.0 was built against the numpy 1.x
+# C-API and crashes at runtime under numpy 2.x.
+dependencies = [
+    "torch==2.4.0",
+    "numpy==1.26.4",
+    "pandas==2.2.2",
+    "scipy==1.17.1",
+    "scikit-learn==1.4.2",
+    "matplotlib==3.9.2",
+    "seaborn==0.13.2",
+    "xgboost==3.0.2",
+    "lightgbm==4.3.0",
+    "joblib==1.5.2",
+    "tqdm==4.67.1",
+]
+
+[tool.uv]
+# Research application, not a publishable library — don't try to build/install
+# the project itself, only resolve and lock its dependencies.
+package = false
+
+# Pull the CPU torch build from PyTorch's own index (reproduces torch 2.4.0+cpu).
+# `explicit = true` keeps this index scoped to torch only; everything else uses PyPI.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
