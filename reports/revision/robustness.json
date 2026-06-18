@@ -1,0 +1,503 @@
+{
+  "mission1": {
+    "CNN": {
+      "clean_acc": 98.94,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        98.94,
+        99.0,
+        98.81,
+        98.21,
+        97.21
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        98.94,
+        98.94,
+        98.94,
+        98.94,
+        98.87
+      ],
+      "retained_pct_noise": 99.4,
+      "retained_pct_missing": 100.0
+    },
+    "BiLSTM": {
+      "clean_acc": 98.74,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        98.74,
+        98.61,
+        98.47,
+        98.08,
+        97.68
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        98.74,
+        98.74,
+        98.67,
+        98.74,
+        98.61
+      ],
+      "retained_pct_noise": 99.5,
+      "retained_pct_missing": 99.9
+    },
+    "Transformer": {
+      "clean_acc": 97.88,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        97.88,
+        97.88,
+        98.01,
+        97.88,
+        97.74
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        97.88,
+        98.01,
+        97.88,
+        97.94,
+        98.21
+      ],
+      "retained_pct_noise": 100.0,
+      "retained_pct_missing": 100.1
+    },
+    "ConvFormer": {
+      "clean_acc": 92.17,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        92.17,
+        92.44,
+        92.04,
+        92.17,
+        83.28
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        92.17,
+        92.17,
+        92.3,
+        92.44,
+        92.63
+      ],
+      "retained_pct_noise": 97.6,
+      "retained_pct_missing": 100.2
+    },
+    "Hybrid": {
+      "clean_acc": 98.67,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        98.67,
+        98.61,
+        98.94,
+        98.54,
+        97.74
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        98.67,
+        98.67,
+        98.67,
+        98.67,
+        98.87
+      ],
+      "retained_pct_noise": 99.8,
+      "retained_pct_missing": 100.1
+    }
+  },
+  "mission2": {
+    "CNN": {
+      "clean_acc": 35.89,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        35.89,
+        35.83,
+        35.95,
+        34.84,
+        22.9
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        35.89,
+        35.89,
+        35.89,
+        35.89,
+        35.89
+      ],
+      "retained_pct_noise": 90.2,
+      "retained_pct_missing": 100.0
+    },
+    "BiLSTM": {
+      "clean_acc": 45.3,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        45.3,
+        45.42,
+        46.72,
+        52.6,
+        55.07
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        45.3,
+        45.3,
+        45.3,
+        45.3,
+        45.3
+      ],
+      "retained_pct_noise": 110.3,
+      "retained_pct_missing": 100.0
+    },
+    "Transformer": {
+      "clean_acc": 76.79,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        76.79,
+        46.29,
+        40.28,
+        30.94,
+        14.42
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        76.79,
+        71.72,
+        70.36,
+        65.35,
+        59.78
+      ],
+      "retained_pct_noise": 43.0,
+      "retained_pct_missing": 87.0
+    },
+    "ConvFormer": {
+      "clean_acc": 35.58,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        35.58,
+        35.58,
+        35.52,
+        34.96,
+        24.75
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        35.58,
+        35.58,
+        35.58,
+        35.52,
+        35.58
+      ],
+      "retained_pct_noise": 91.9,
+      "retained_pct_missing": 100.0
+    },
+    "Hybrid": {
+      "clean_acc": 34.53,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        34.53,
+        30.57,
+        25.06,
+        21.41,
+        18.25
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        34.53,
+        34.53,
+        34.59,
+        34.53,
+        34.34
+      ],
+      "retained_pct_noise": 69.0,
+      "retained_pct_missing": 99.9
+    }
+  },
+  "mission3": {
+    "CNN": {
+      "clean_acc": 91.84,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        91.84,
+        91.9,
+        91.64,
+        91.57,
+        91.44
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        91.84,
+        91.84,
+        91.84,
+        91.84,
+        91.77
+      ],
+      "retained_pct_noise": 99.8,
+      "retained_pct_missing": 100.0
+    },
+    "BiLSTM": {
+      "clean_acc": 99.34,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        99.34,
+        99.34,
+        99.4,
+        99.34,
+        99.4
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        99.34,
+        99.34,
+        99.34,
+        99.4,
+        99.4
+      ],
+      "retained_pct_noise": 100.0,
+      "retained_pct_missing": 100.0
+    },
+    "Transformer": {
+      "clean_acc": 99.87,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        99.87,
+        99.87,
+        99.87,
+        99.93,
+        100.0
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        99.87,
+        99.87,
+        99.87,
+        99.87,
+        99.87
+      ],
+      "retained_pct_noise": 100.0,
+      "retained_pct_missing": 100.0
+    },
+    "ConvFormer": {
+      "clean_acc": 99.54,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        99.54,
+        99.54,
+        99.54,
+        99.54,
+        99.6
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        99.54,
+        99.54,
+        99.54,
+        99.54,
+        99.54
+      ],
+      "retained_pct_noise": 100.0,
+      "retained_pct_missing": 100.0
+    },
+    "Hybrid": {
+      "clean_acc": 91.77,
+      "noise_sigma": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5
+      ],
+      "noise_acc": [
+        91.77,
+        91.77,
+        91.77,
+        91.51,
+        93.1
+      ],
+      "missing_frac": [
+        0.0,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "missing_acc": [
+        91.77,
+        91.77,
+        91.77,
+        91.77,
+        91.71
+      ],
+      "retained_pct_noise": 100.3,
+      "retained_pct_missing": 100.0
+    }
+  }
+}

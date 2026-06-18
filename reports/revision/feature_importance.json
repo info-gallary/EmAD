@@ -1,0 +1,209 @@
+{
+  "mission1": {
+    "n_cls": 3,
+    "full": {
+      "accuracy": 96.55,
+      "macro_f1": 0.531,
+      "balanced_acc": 0.5537
+    },
+    "rf_importance_by_family": {
+      "base": 0.442,
+      "d1": 0.0174,
+      "d2": 0.0072,
+      "rmean": 0.5043,
+      "rstd": 0.0292
+    },
+    "only_family": {
+      "base": {
+        "accuracy": 96.48,
+        "macro_f1": 0.5273,
+        "balanced_acc": 0.548
+      },
+      "d1": {
+        "accuracy": 94.82,
+        "macro_f1": 0.4267,
+        "balanced_acc": 0.4068
+      },
+      "d2": {
+        "accuracy": 93.96,
+        "macro_f1": 0.3243,
+        "balanced_acc": 0.3333
+      },
+      "rmean": {
+        "accuracy": 96.08,
+        "macro_f1": 0.5036,
+        "balanced_acc": 0.5141
+      },
+      "rstd": {
+        "accuracy": 94.89,
+        "macro_f1": 0.4393,
+        "balanced_acc": 0.4124
+      }
+    },
+    "leave_one_family_out": {
+      "base": {
+        "accuracy": 96.55,
+        "macro_f1": 0.531,
+        "balanced_acc": 0.5537
+      },
+      "d1": {
+        "accuracy": 96.55,
+        "macro_f1": 0.531,
+        "balanced_acc": 0.5537
+      },
+      "d2": {
+        "accuracy": 96.55,
+        "macro_f1": 0.531,
+        "balanced_acc": 0.5537
+      },
+      "rmean": {
+        "accuracy": 97.21,
+        "macro_f1": 0.5655,
+        "balanced_acc": 0.6102
+      },
+      "rstd": {
+        "accuracy": 96.55,
+        "macro_f1": 0.531,
+        "balanced_acc": 0.5537
+      }
+    }
+  },
+  "mission2": {
+    "n_cls": 2,
+    "full": {
+      "accuracy": 95.42,
+      "macro_f1": 0.9149,
+      "balanced_acc": 0.9536
+    },
+    "rf_importance_by_family": {
+      "base": 0.3232,
+      "d1": 0.1224,
+      "d2": 0.0755,
+      "rmean": 0.3228,
+      "rstd": 0.1561
+    },
+    "only_family": {
+      "base": {
+        "accuracy": 94.68,
+        "macro_f1": 0.9038,
+        "balanced_acc": 0.9546
+      },
+      "d1": {
+        "accuracy": 94.86,
+        "macro_f1": 0.9035,
+        "balanced_acc": 0.9361
+      },
+      "d2": {
+        "accuracy": 93.81,
+        "macro_f1": 0.8892,
+        "balanced_acc": 0.9424
+      },
+      "rmean": {
+        "accuracy": 93.75,
+        "macro_f1": 0.8862,
+        "balanced_acc": 0.9314
+      },
+      "rstd": {
+        "accuracy": 95.79,
+        "macro_f1": 0.9198,
+        "balanced_acc": 0.9469
+      }
+    },
+    "leave_one_family_out": {
+      "base": {
+        "accuracy": 95.79,
+        "macro_f1": 0.9221,
+        "balanced_acc": 0.9629
+      },
+      "d1": {
+        "accuracy": 95.73,
+        "macro_f1": 0.9208,
+        "balanced_acc": 0.9608
+      },
+      "d2": {
+        "accuracy": 95.42,
+        "macro_f1": 0.9157,
+        "balanced_acc": 0.959
+      },
+      "rmean": {
+        "accuracy": 95.67,
+        "macro_f1": 0.92,
+        "balanced_acc": 0.9622
+      },
+      "rstd": {
+        "accuracy": 95.3,
+        "macro_f1": 0.914,
+        "balanced_acc": 0.96
+      }
+    }
+  },
+  "mission3": {
+    "n_cls": 2,
+    "full": {
+      "accuracy": 99.34,
+      "macro_f1": 0.9916,
+      "balanced_acc": 0.9879
+    },
+    "rf_importance_by_family": {
+      "base": 0.4955,
+      "d1": 0.0004,
+      "d2": 0.0002,
+      "rmean": 0.5032,
+      "rstd": 0.0007
+    },
+    "only_family": {
+      "base": {
+        "accuracy": 99.27,
+        "macro_f1": 0.9908,
+        "balanced_acc": 0.9867
+      },
+      "d1": {
+        "accuracy": 23.89,
+        "macro_f1": 0.1928,
+        "balanced_acc": 0.4358
+      },
+      "d2": {
+        "accuracy": 23.82,
+        "macro_f1": 0.1924,
+        "balanced_acc": 0.4346
+      },
+      "rmean": {
+        "accuracy": 99.34,
+        "macro_f1": 0.9916,
+        "balanced_acc": 0.9879
+      },
+      "rstd": {
+        "accuracy": 23.62,
+        "macro_f1": 0.1911,
+        "balanced_acc": 0.431
+      }
+    },
+    "leave_one_family_out": {
+      "base": {
+        "accuracy": 99.2,
+        "macro_f1": 0.9899,
+        "balanced_acc": 0.9855
+      },
+      "d1": {
+        "accuracy": 99.34,
+        "macro_f1": 0.9916,
+        "balanced_acc": 0.9879
+      },
+      "d2": {
+        "accuracy": 99.34,
+        "macro_f1": 0.9916,
+        "balanced_acc": 0.9879
+      },
+      "rmean": {
+        "accuracy": 99.2,
+        "macro_f1": 0.9899,
+        "balanced_acc": 0.9855
+      },
+      "rstd": {
+        "accuracy": 99.34,
+        "macro_f1": 0.9916,
+        "balanced_acc": 0.9879
+      }
+    }
+  }
+}

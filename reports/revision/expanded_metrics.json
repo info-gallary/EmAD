@@ -1,0 +1,907 @@
+{
+  "mission1": {
+    "n_feat": 275,
+    "n_cls": 3,
+    "test_windows": 1507,
+    "class_names": {
+      "0": "Normal",
+      "1": "Thermal Anomaly",
+      "2": "Rare-Event"
+    },
+    "models": {
+      "CNN": {
+        "accuracy": 0.9893828798938288,
+        "balanced_accuracy": 0.8667019774011299,
+        "mcc": 0.9051493542644867,
+        "weighted_f1": 0.9889884535475747,
+        "macro_f1": 0.9001882153696172,
+        "weighted_precision": 0.9896015370012997,
+        "weighted_recall": 0.9893828798938288,
+        "roc_auc": 0.9954678060257937,
+        "pr_auc": 0.9787879763103661,
+        "per_class": {
+          "Normal": {
+            "precision": 0.8524590163934426,
+            "recall": 0.8813559322033898,
+            "f1": 0.8666666666666667,
+            "support": 59
+          },
+          "Thermal Anomaly": {
+            "precision": 1.0,
+            "recall": 0.71875,
+            "f1": 0.8363636363636363,
+            "support": 32
+          },
+          "Rare-Event": {
+            "precision": 0.9950808151791989,
+            "recall": 1.0,
+            "f1": 0.9975343430785488,
+            "support": 1416
+          }
+        },
+        "confusion_matrix": [
+          [
+            52,
+            0,
+            7
+          ],
+          [
+            9,
+            23,
+            0
+          ],
+          [
+            0,
+            0,
+            1416
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Thermal Anomaly",
+              "pred": "Normal",
+              "count": 9,
+              "frac_of_true": 0.28125
+            },
+            {
+              "true": "Normal",
+              "pred": "Rare-Event",
+              "count": 7,
+              "frac_of_true": 0.11864406779661017
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.11864406779661019,
+            "Thermal Anomaly": 0.28125,
+            "Rare-Event": 0.0
+          }
+        }
+      },
+      "BiLSTM": {
+        "accuracy": 0.9873921698739216,
+        "balanced_accuracy": 0.8306850282485877,
+        "mcc": 0.8877852248877872,
+        "weighted_f1": 0.9866499533839526,
+        "macro_f1": 0.8636612914369411,
+        "weighted_precision": 0.9883238913964726,
+        "weighted_recall": 0.9873921698739216,
+        "roc_auc": 0.8653009799738193,
+        "pr_auc": 0.8567421170373858,
+        "per_class": {
+          "Normal": {
+            "precision": 0.803030303030303,
+            "recall": 0.8983050847457628,
+            "f1": 0.848,
+            "support": 59
+          },
+          "Thermal Anomaly": {
+            "precision": 1.0,
+            "recall": 0.59375,
+            "f1": 0.7450980392156863,
+            "support": 32
+          },
+          "Rare-Event": {
+            "precision": 0.9957805907172996,
+            "recall": 1.0,
+            "f1": 0.9978858350951374,
+            "support": 1416
+          }
+        },
+        "confusion_matrix": [
+          [
+            53,
+            0,
+            6
+          ],
+          [
+            13,
+            19,
+            0
+          ],
+          [
+            0,
+            0,
+            1416
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Thermal Anomaly",
+              "pred": "Normal",
+              "count": 13,
+              "frac_of_true": 0.40625
+            },
+            {
+              "true": "Normal",
+              "pred": "Rare-Event",
+              "count": 6,
+              "frac_of_true": 0.1016949152542373
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.10169491525423724,
+            "Thermal Anomaly": 0.40625,
+            "Rare-Event": 0.0
+          }
+        }
+      },
+      "Transformer": {
+        "accuracy": 0.9787657597876576,
+        "balanced_accuracy": 0.6666666666666666,
+        "mcc": 0.8182034569064836,
+        "weighted_f1": 0.9704136253041363,
+        "macro_f1": 0.5955555555555555,
+        "weighted_precision": 0.9649985051444905,
+        "weighted_recall": 0.9787657597876576,
+        "roc_auc": 0.7808139807098042,
+        "pr_auc": 0.6286671918844512,
+        "per_class": {
+          "Normal": {
+            "precision": 0.6483516483516484,
+            "recall": 1.0,
+            "f1": 0.7866666666666666,
+            "support": 59
+          },
+          "Thermal Anomaly": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 32
+          },
+          "Rare-Event": {
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "support": 1416
+          }
+        },
+        "confusion_matrix": [
+          [
+            59,
+            0,
+            0
+          ],
+          [
+            32,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1416
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Thermal Anomaly",
+              "pred": "Normal",
+              "count": 32,
+              "frac_of_true": 1.0
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.0,
+            "Thermal Anomaly": 1.0,
+            "Rare-Event": 0.0
+          }
+        }
+      },
+      "ConvFormer": {
+        "accuracy": 0.9216987392169874,
+        "balanced_accuracy": 0.646421845574388,
+        "mcc": 0.5685773654716623,
+        "weighted_f1": 0.9297633138096507,
+        "macro_f1": 0.48956057295460065,
+        "weighted_precision": 0.9526653395266534,
+        "weighted_recall": 0.9216987392169874,
+        "roc_auc": 0.9312146892655367,
+        "pr_auc": 0.8592047357935996,
+        "per_class": {
+          "Normal": {
+            "precision": 0.3333333333333333,
+            "recall": 1.0,
+            "f1": 0.5,
+            "support": 59
+          },
+          "Thermal Anomaly": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 32
+          },
+          "Rare-Event": {
+            "precision": 1.0,
+            "recall": 0.9392655367231638,
+            "f1": 0.9686817188638019,
+            "support": 1416
+          }
+        },
+        "confusion_matrix": [
+          [
+            59,
+            0,
+            0
+          ],
+          [
+            32,
+            0,
+            0
+          ],
+          [
+            86,
+            0,
+            1330
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Rare-Event",
+              "pred": "Normal",
+              "count": 86,
+              "frac_of_true": 0.06073446327683616
+            },
+            {
+              "true": "Thermal Anomaly",
+              "pred": "Normal",
+              "count": 32,
+              "frac_of_true": 1.0
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.0,
+            "Thermal Anomaly": 1.0,
+            "Rare-Event": 0.06073446327683618
+          }
+        }
+      },
+      "Hybrid": {
+        "accuracy": 0.986728599867286,
+        "balanced_accuracy": 0.8012005649717514,
+        "mcc": 0.8843892970702637,
+        "weighted_f1": 0.9851844700972884,
+        "macro_f1": 0.819578734842861,
+        "weighted_precision": 0.9892785805404586,
+        "weighted_recall": 0.986728599867286,
+        "roc_auc": 0.9386068452102257,
+        "pr_auc": 0.9196332827946999,
+        "per_class": {
+          "Normal": {
+            "precision": 0.76,
+            "recall": 0.9661016949152542,
+            "f1": 0.8507462686567164,
+            "support": 59
+          },
+          "Thermal Anomaly": {
+            "precision": 1.0,
+            "recall": 0.4375,
+            "f1": 0.6086956521739131,
+            "support": 32
+          },
+          "Rare-Event": {
+            "precision": 0.998589562764457,
+            "recall": 1.0,
+            "f1": 0.9992942836979535,
+            "support": 1416
+          }
+        },
+        "confusion_matrix": [
+          [
+            57,
+            0,
+            2
+          ],
+          [
+            18,
+            14,
+            0
+          ],
+          [
+            0,
+            0,
+            1416
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Thermal Anomaly",
+              "pred": "Normal",
+              "count": 18,
+              "frac_of_true": 0.5625
+            },
+            {
+              "true": "Normal",
+              "pred": "Rare-Event",
+              "count": 2,
+              "frac_of_true": 0.03389830508474576
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.03389830508474578,
+            "Thermal Anomaly": 0.5625,
+            "Rare-Event": 0.0
+          }
+        }
+      },
+      "VAE": {
+        "task": "binary (normal vs anomaly, reconstruction error)",
+        "accuracy": 0.9396151293961513,
+        "balanced_accuracy": 0.9360602584511658,
+        "mcc": 0.5789969718718168,
+        "f1": 0.9676501955207963,
+        "precision": 0.9970695970695971,
+        "recall": 0.9399171270718232,
+        "roc_auc": 0.94660080531885,
+        "pr_auc": 0.9932437224115058,
+        "threshold": 0.01114858187485208
+      }
+    }
+  },
+  "mission2": {
+    "n_feat": 215,
+    "n_cls": 2,
+    "test_windows": 1616,
+    "class_names": {
+      "0": "Normal",
+      "1": "Rare-Event"
+    },
+    "models": {
+      "CNN": {
+        "accuracy": 0.3589108910891089,
+        "balanced_accuracy": 0.6254519161243673,
+        "mcc": 0.21463512556624142,
+        "weighted_f1": 0.38804937623754754,
+        "macro_f1": 0.35570453268474406,
+        "weighted_precision": 0.8822901793725473,
+        "weighted_recall": 0.3589108910891089,
+        "roc_auc": 0.5228463966186588,
+        "pr_auc": 0.28511706572011375,
+        "per_class": {
+          "Normal": {
+            "precision": 1.0,
+            "recall": 0.25090383224873464,
+            "f1": 0.40115606936416187,
+            "support": 1383
+          },
+          "Rare-Event": {
+            "precision": 0.18360914105594955,
+            "recall": 1.0,
+            "f1": 0.31025299600532624,
+            "support": 233
+          }
+        },
+        "confusion_matrix": [
+          [
+            347,
+            1036
+          ],
+          [
+            0,
+            233
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Normal",
+              "pred": "Rare-Event",
+              "count": 1036,
+              "frac_of_true": 0.7490961677512654
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.7490961677512653,
+            "Rare-Event": 0.0
+          }
+        }
+      },
+      "BiLSTM": {
+        "accuracy": 0.452970297029703,
+        "balanced_accuracy": 0.6804049168474331,
+        "mcc": 0.2743408985262882,
+        "weighted_f1": 0.5035983729439185,
+        "macro_f1": 0.43773605699216755,
+        "weighted_precision": 0.8858926402935728,
+        "weighted_recall": 0.452970297029703,
+        "roc_auc": 0.9425736797842595,
+        "pr_auc": 0.8676035323594613,
+        "per_class": {
+          "Normal": {
+            "precision": 1.0,
+            "recall": 0.36080983369486624,
+            "f1": 0.5302869287991498,
+            "support": 1383
+          },
+          "Rare-Event": {
+            "precision": 0.20859444941808417,
+            "recall": 1.0,
+            "f1": 0.3451851851851852,
+            "support": 233
+          }
+        },
+        "confusion_matrix": [
+          [
+            499,
+            884
+          ],
+          [
+            0,
+            233
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Normal",
+              "pred": "Rare-Event",
+              "count": 884,
+              "frac_of_true": 0.6391901663051338
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.6391901663051338,
+            "Rare-Event": 0.0
+          }
+        }
+      },
+      "Transformer": {
+        "accuracy": 0.7679455445544554,
+        "balanced_accuracy": 0.8537188236060812,
+        "mcc": 0.515055468365571,
+        "weighted_f1": 0.8012239851477321,
+        "macro_f1": 0.6957964185299136,
+        "weighted_precision": 0.9056980163817803,
+        "weighted_recall": 0.7679455445544554,
+        "roc_auc": 0.9551652655327257,
+        "pr_auc": 0.6697062378391742,
+        "per_class": {
+          "Normal": {
+            "precision": 0.9941176470588236,
+            "recall": 0.7331887201735358,
+            "f1": 0.8439450686641697,
+            "support": 1383
+          },
+          "Rare-Event": {
+            "precision": 0.3808724832214765,
+            "recall": 0.9742489270386266,
+            "f1": 0.5476477683956574,
+            "support": 233
+          }
+        },
+        "confusion_matrix": [
+          [
+            1014,
+            369
+          ],
+          [
+            6,
+            227
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Normal",
+              "pred": "Rare-Event",
+              "count": 369,
+              "frac_of_true": 0.2668112798264642
+            },
+            {
+              "true": "Rare-Event",
+              "pred": "Normal",
+              "count": 6,
+              "frac_of_true": 0.02575107296137339
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.26681127982646424,
+            "Rare-Event": 0.025751072961373356
+          }
+        }
+      },
+      "ConvFormer": {
+        "accuracy": 0.3558168316831683,
+        "balanced_accuracy": 0.6236442516268981,
+        "mcc": 0.21266460290005051,
+        "weighted_f1": 0.38393482017195685,
+        "macro_f1": 0.3528726811113355,
+        "weighted_precision": 0.8821862808337348,
+        "weighted_recall": 0.3558168316831683,
+        "roc_auc": 0.9555795543059654,
+        "pr_auc": 0.9326726154702092,
+        "per_class": {
+          "Normal": {
+            "precision": 1.0,
+            "recall": 0.2472885032537961,
+            "f1": 0.39652173913043476,
+            "support": 1383
+          },
+          "Rare-Event": {
+            "precision": 0.18288854003139718,
+            "recall": 1.0,
+            "f1": 0.3092236230922362,
+            "support": 233
+          }
+        },
+        "confusion_matrix": [
+          [
+            342,
+            1041
+          ],
+          [
+            0,
+            233
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Normal",
+              "pred": "Rare-Event",
+              "count": 1041,
+              "frac_of_true": 0.7527114967462039
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.7527114967462039,
+            "Rare-Event": 0.0
+          }
+        }
+      },
+      "Hybrid": {
+        "accuracy": 0.34529702970297027,
+        "balanced_accuracy": 0.6174981923355025,
+        "mcc": 0.20594223887766663,
+        "weighted_f1": 0.36977892143249985,
+        "macro_f1": 0.3431681695525764,
+        "weighted_precision": 0.881839045639653,
+        "weighted_recall": 0.34529702970297027,
+        "roc_auc": 0.6032013505503678,
+        "pr_auc": 0.28962774471395114,
+        "per_class": {
+          "Normal": {
+            "precision": 1.0,
+            "recall": 0.23499638467100506,
+            "f1": 0.3805620608899297,
+            "support": 1383
+          },
+          "Rare-Event": {
+            "precision": 0.18048024786986833,
+            "recall": 1.0,
+            "f1": 0.30577427821522307,
+            "support": 233
+          }
+        },
+        "confusion_matrix": [
+          [
+            325,
+            1058
+          ],
+          [
+            0,
+            233
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Normal",
+              "pred": "Rare-Event",
+              "count": 1058,
+              "frac_of_true": 0.765003615328995
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.765003615328995,
+            "Rare-Event": 0.0
+          }
+        }
+      },
+      "VAE": {
+        "task": "binary (normal vs anomaly, reconstruction error)",
+        "accuracy": 0.14418316831683167,
+        "balanced_accuracy": 0.5,
+        "mcc": 0.0,
+        "f1": 0.25202812330989727,
+        "precision": 0.14418316831683167,
+        "recall": 1.0,
+        "roc_auc": 0.39927817551568867,
+        "pr_auc": 0.26612181531631685,
+        "threshold": 0.00401508675906238
+      }
+    }
+  },
+  "mission3": {
+    "n_feat": 35,
+    "n_cls": 2,
+    "test_windows": 1507,
+    "class_names": {
+      "0": "Normal",
+      "1": "Power Anomaly"
+    },
+    "models": {
+      "CNN": {
+        "accuracy": 0.9183808891838089,
+        "balanced_accuracy": 0.851089588377724,
+        "mcc": 0.7944880055338204,
+        "weighted_f1": 0.9134127043033868,
+        "macro_f1": 0.8859059245995865,
+        "weighted_precision": 0.9266299858398415,
+        "weighted_recall": 0.9183808891838089,
+        "roc_auc": 1.0,
+        "pr_auc": 1.0,
+        "per_class": {
+          "Normal": {
+            "precision": 0.8989317995069844,
+            "recall": 1.0,
+            "f1": 0.9467762873215059,
+            "support": 1094
+          },
+          "Power Anomaly": {
+            "precision": 1.0,
+            "recall": 0.7021791767554479,
+            "f1": 0.8250355618776671,
+            "support": 413
+          }
+        },
+        "confusion_matrix": [
+          [
+            1094,
+            0
+          ],
+          [
+            123,
+            290
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Power Anomaly",
+              "pred": "Normal",
+              "count": 123,
+              "frac_of_true": 0.29782082324455206
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.0,
+            "Power Anomaly": 0.29782082324455206
+          }
+        }
+      },
+      "BiLSTM": {
+        "accuracy": 0.993364299933643,
+        "balanced_accuracy": 0.9878934624697336,
+        "mcc": 0.9833352812022177,
+        "weighted_f1": 0.9933387348658794,
+        "macro_f1": 0.991597753751182,
+        "weighted_precision": 0.993424405912505,
+        "weighted_recall": 0.993364299933643,
+        "roc_auc": 0.9854721549636805,
+        "pr_auc": 0.9894360365906586,
+        "per_class": {
+          "Normal": {
+            "precision": 0.9909420289855072,
+            "recall": 1.0,
+            "f1": 0.9954504094631483,
+            "support": 1094
+          },
+          "Power Anomaly": {
+            "precision": 1.0,
+            "recall": 0.9757869249394673,
+            "f1": 0.9877450980392157,
+            "support": 413
+          }
+        },
+        "confusion_matrix": [
+          [
+            1094,
+            0
+          ],
+          [
+            10,
+            403
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Power Anomaly",
+              "pred": "Normal",
+              "count": 10,
+              "frac_of_true": 0.024213075060532687
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.0,
+            "Power Anomaly": 0.02421307506053272
+          }
+        }
+      },
+      "Transformer": {
+        "accuracy": 0.9986728599867286,
+        "balanced_accuracy": 0.9975786924939467,
+        "mcc": 0.9966651415386983,
+        "weighted_f1": 0.9986718553799225,
+        "macro_f1": 0.9983297867624241,
+        "weighted_precision": 0.998675281775074,
+        "weighted_recall": 0.9986728599867286,
+        "roc_auc": 1.0,
+        "pr_auc": 1.0,
+        "per_class": {
+          "Normal": {
+            "precision": 0.9981751824817519,
+            "recall": 1.0,
+            "f1": 0.9990867579908675,
+            "support": 1094
+          },
+          "Power Anomaly": {
+            "precision": 1.0,
+            "recall": 0.9951573849878934,
+            "f1": 0.9975728155339806,
+            "support": 413
+          }
+        },
+        "confusion_matrix": [
+          [
+            1094,
+            0
+          ],
+          [
+            2,
+            411
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Power Anomaly",
+              "pred": "Normal",
+              "count": 2,
+              "frac_of_true": 0.004842615012106538
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.0,
+            "Power Anomaly": 0.004842615012106588
+          }
+        }
+      },
+      "ConvFormer": {
+        "accuracy": 0.9953550099535501,
+        "balanced_accuracy": 0.9915254237288136,
+        "mcc": 0.9883323081044614,
+        "weighted_f1": 0.9953425661587875,
+        "macro_f1": 0.994131962696883,
+        "weighted_precision": 0.995384542133682,
+        "weighted_recall": 0.9953550099535501,
+        "roc_auc": 1.0,
+        "pr_auc": 1.0000000000000002,
+        "per_class": {
+          "Normal": {
+            "precision": 0.9936421435059037,
+            "recall": 1.0,
+            "f1": 0.9968109339407745,
+            "support": 1094
+          },
+          "Power Anomaly": {
+            "precision": 1.0,
+            "recall": 0.9830508474576272,
+            "f1": 0.9914529914529915,
+            "support": 413
+          }
+        },
+        "confusion_matrix": [
+          [
+            1094,
+            0
+          ],
+          [
+            7,
+            406
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Power Anomaly",
+              "pred": "Normal",
+              "count": 7,
+              "frac_of_true": 0.01694915254237288
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.0,
+            "Power Anomaly": 0.016949152542372836
+          }
+        }
+      },
+      "Hybrid": {
+        "accuracy": 0.9177173191771731,
+        "balanced_accuracy": 0.8498789346246973,
+        "mcc": 0.7927913671670161,
+        "weighted_f1": 0.9126567303012634,
+        "macro_f1": 0.8848643026843719,
+        "weighted_precision": 0.9260942095072475,
+        "weighted_recall": 0.9177173191771731,
+        "roc_auc": 1.0,
+        "pr_auc": 1.0,
+        "per_class": {
+          "Normal": {
+            "precision": 0.8981937602627258,
+            "recall": 1.0,
+            "f1": 0.9463667820069204,
+            "support": 1094
+          },
+          "Power Anomaly": {
+            "precision": 1.0,
+            "recall": 0.6997578692493946,
+            "f1": 0.8233618233618234,
+            "support": 413
+          }
+        },
+        "confusion_matrix": [
+          [
+            1094,
+            0
+          ],
+          [
+            124,
+            289
+          ]
+        ],
+        "error_analysis": {
+          "top_confusions": [
+            {
+              "true": "Power Anomaly",
+              "pred": "Normal",
+              "count": 124,
+              "frac_of_true": 0.30024213075060535
+            }
+          ],
+          "per_class_error_rate": {
+            "Normal": 0.0,
+            "Power Anomaly": 0.30024213075060535
+          }
+        }
+      },
+      "VAE": {
+        "task": "binary (normal vs anomaly, reconstruction error)",
+        "accuracy": 0.8201725282017253,
+        "balanced_accuracy": 0.6741736790151873,
+        "mcc": 0.5221023185498554,
+        "f1": 0.5169340463458111,
+        "precision": 0.9797297297297297,
+        "recall": 0.35108958837772397,
+        "roc_auc": 0.5237482902558972,
+        "pr_auc": 0.5651784013046675,
+        "threshold": 0.014666434987048857
+      }
+    }
+  }
+}
