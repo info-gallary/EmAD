@@ -47,25 +47,38 @@ def load_split(mid):
     return T.per_class_chron_split(Xw, yw) + (X.shape[1], len(uniq))
 
 
-def evaluate(model, name, tstl, yte):
-    model.eval(); ps = []
+def evaluate(model, name, tstl, yte, n_cls, prior):
+    """Argmax metrics + (binary missions) prior-matched calibrated accuracy."""
+    model.eval(); ps = []; sc = []
     with torch.no_grad():
         for Xb, _ in tstl:
             logits = model(Xb.to(DEVICE))
             if name == "Hybrid": logits = logits[0]
-            ps.extend(logits.argmax(1).cpu().tolist())
+            prob = torch.softmax(logits, 1)
+            ps.extend(prob.argmax(1).cpu().tolist())
+            if n_cls == 2:
+                sc.extend(prob[:, 1].cpu().tolist())
     ps = np.array(ps)
-    return {
+    out = {
         "accuracy": accuracy_score(yte, ps) * 100,
         "weighted_f1": f1_score(yte, ps, average="weighted", zero_division=0),
         "macro_f1": f1_score(yte, ps, average="macro", zero_division=0),
         "balanced_acc": balanced_accuracy_score(yte, ps),
         "mcc": matthews_corrcoef(yte, ps),
     }
+    if n_cls == 2:
+        sc = np.array(sc); yb = (yte != 0).astype(int)
+        tau = float(np.quantile(sc, 1 - prior))   # flag top `prior` fraction
+        cp = (sc >= tau).astype(int)
+        out["calibrated_accuracy"] = accuracy_score(yb, cp) * 100
+        out["calibrated_macro_f1"] = f1_score(yb, cp, average="macro", zero_division=0)
+        out["calibrated_mcc"] = matthews_corrcoef(yb, cp)
+    return out
 
 
 def train_one(name, mid, seed, data):
     Xtr, ytr, Xva, yva, Xte, yte, n_feat, n_cls = data
+    prior = float((ytr != 0).mean())
     torch.manual_seed(seed); np.random.seed(seed); random.seed(seed)
     cw = T.class_weights(ytr, n_cls, DEVICE)
     trnl = DataLoader(T.TelDS(Xtr, ytr), T.BATCH, shuffle=True)
@@ -110,7 +123,7 @@ def train_one(name, mid, seed, data):
             break
     model.load_state_dict(best_w)
     torch.save(best_w, os.path.join(WDIR, f"m{mid}_{name.lower()}_s{seed}.pt"))
-    return evaluate(model, name, tstl, yte), ep
+    return evaluate(model, name, tstl, yte, n_cls, prior), ep
 
 
 def agg(vals):
@@ -137,8 +150,11 @@ def main():
                       f"MCC={m['mcc']:.3f}  (ep={ep}, {time.time()-t0:.0f}s)")
             mres[name] = {k: agg([r[k] for r in runs]) for k in runs[0]}
             a = mres[name]["accuracy"]
-            print(f"  -> {name:12s} acc = {a['mean']:.2f} +/- {a['std']:.2f}  "
-                  f"(seeds {SEEDS})")
+            line = f"  -> {name:12s} acc = {a['mean']:.2f} +/- {a['std']:.2f}"
+            if "calibrated_accuracy" in mres[name]:
+                c = mres[name]["calibrated_accuracy"]
+                line += f"   | calibrated = {c['mean']:.2f} +/- {c['std']:.2f}"
+            print(line + f"   (seeds {SEEDS})")
         allres[f"mission{mid}"] = mres
         # checkpoint after each mission
         with open(os.path.join(OUT, "multiseed_results.json"), "w") as f:
